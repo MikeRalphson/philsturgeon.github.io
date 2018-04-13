@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>GraphQL vs REST: Caching | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="GraphQL vs REST: Caching" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="Recently I wrote GraphQL vs REST: Overview, giving a hype-free outline of the differences between REST and GraphQL. One section that would not have fit into that already lengthy article was caching, so I thought I&#x27;d fire that out next." />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2017/01/26/graphql-vs-rest-caching/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="GraphQL vs REST: Caching | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2017/01/26/graphql-vs-rest-caching/">
+  <meta name="twitter:description" content="Recently I wrote GraphQL vs REST: Overview, giving a hype-free outline of the differences between REST and GraphQL. One section that would not have fit into that already lengthy article was caching, so I thought I&#x27;d fire that out next.">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">GraphQL vs REST: Caching</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2017-01-26 22:16:00 UTC">
+                Jan 26 2017
+              </time>
+              <a href="/tag/graphql/">#graphql</a>
+              <a href="/tag/rest/">#rest</a>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/http/">#http</a>
+              <a href="/tag/caching/">#caching</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <hr>
+
+          <p>Recently I wrote <a href="/api/2017/01/24/graphql-vs-rest-overview/">GraphQL vs REST: Overview</a>, giving a hype-free outline of the differences between <a href="https://en.wikipedia.org/wiki/Representational_state_transfer">REST</a> and <a href="http://graphql.org/">GraphQL</a>. One section that would not have fit into that already lengthy article was caching, so I thought I'd fire that out next.</p>
+
+<p>Comparing how caching is used for the two approaches is tricky, because despite common opinion, REST has nothing to do with HTTP. REST is <em>usually</em> implemented in HTTP, therefore when most folks talk about <a href="http://www.apiacademy.co/how-to-http-caching-for-restful-hypermedia-apis/">"caching in REST"</a>, they are really talking about caching with HTTP. That is a <a href="https://www.mnot.net/cache_docs/">huge topic in its own right</a>.</p>
+
+<p>Another point to mention is that caching for HTTP-based REST, or HTTP-based RPC, is pretty much the same. In the wild I notice RPC APIs offer caching far less, but for the sake of argument let's ignore this false separation and describe them both as "endpoint-based APIs"; a term used by the GraphQL folks to differentiate APIs able to leverage the entirety <a href="https://tools.ietf.org/html/rfc7234">of HTTP caching</a> to their advantage, from GraphQL APIs which use HTTP as a "dumb" tunnel.</p>
+
+<h2 id="get-on-with-it">Get on with it</h2>
+
+<p>Let's have a quick look at the different types of caching that can be involved in an endpoint-based API:</p>
+
+<ul>
+  <li>
+    <p><strong>Client Caching:</strong> Also referred to as "browser caching", the client, browser, app, other service, etc. downloading the data can keep track of what was downloaded when, if that data had any expire time, ETags for the last request to allow for conditional request if data has changed, etc.</p>
+  </li>
+  <li>
+    <p><strong>Network Caching:</strong> Tools like <a href="https://www.varnish-cache.org/">Varnish</a> or <a href="http://www.squid-cache.org/">Squid</a> intercept requests that look the same (based on various configurable criteria), returning a response early straight out of memory, instead of hitting the application server. This allows allows the application server to spend more time handling other traffic.</p>
+  </li>
+  <li>
+    <p><strong>Application Caching:</strong> Software like Memcache, Redis, etc. can be implemented in your application, to cache various things like datastore queries, which should make responses quicker to generate.</p>
+  </li>
+</ul>
+
+<p>Ideally all three concepts would be used as often as possible, as doing slow things multiple times is slow, boring, unnecessary, and probably contributing to climate change or something.</p>
+
+<h2 id="caching-vs-performance">Caching vs Performance</h2>
+
+<p>Whenever you mentioning caching and speed, somebody will descend from the rafters screaming "Caching should not be used for performance!" Erf.</p>
+
+<p>Correct, caching should not be implemented to "make the endpoint load faster", because no matter how fast the cache implementation returns, unless the cache is warmed it is still going to have that initial slow load. Doing a slow thing once, then doing that same thing quicker after, is no good for those suffering the initial slow request.</p>
+
+<p>API developers should always attempt to optimize endpoints to perform quickly, making sure data is structured intelligently, in a way that is quick to query, has optimized indexes, using no computed values (or are computed ahead of time, etc.).</p>
+
+<p>This article isn't going to confuse caching and performance, only focus on removing unnecessary cycles happening for your application server. Not doing something is usually quicker and cheaper than doing something.</p>
+
+<h2 id="using-all-the-caches">Using All The Caches</h2>
+
+<p>Each of the three caching approaches mentioned are helpful in avoiding doing stuff unnecessarily. An endpoint-based API can start off adding <code>Etag</code> and <code>Cache-Control</code> tags in the application itself. The application can control if content is cacheable or not, for how long, allowing the client to look out for these rules and handle the cache locally (an iOS app for example, remembing a result and not making the same request again).</p>
+
+<p>Shoving network caching (HTTP cache proxies like Varnish, Squid or a hosted Varnish service called <a href="https://www.fastly.com/">Fastly</a>) in front of that application server can then save that application server work.</p>
+
+<p><img alt="A request being returned early by a varnish server. -- book.varnish-software.com" src="/images/article_images/2017-01-26-graphql-vs-rest-caching/httpcachehit.png" /></p>
+
+<p><img alt="A request failing to find a match (a.k.a cache miss), and being passed on to the API server to fulfill. -- book.varnish-software.com" src="/images/article_images/2017-01-26-graphql-vs-rest-caching/httpcachemiss.png" /></p>
+
+<p>These tools can leverage HTTP headers like <code>Etag</code>, <code>Vary</code>, <code>Cache-Control</code> to handle cache validation, and know all the rules of HTTP, meaning this application caching can essentially be thrown in and function with very little effort from the API developers. Clients will get a speed boost without even having to implement their own client caching, even though they still could, and still should, as requesting data over the wire from the cache server is still slower than not requesting data.</p>
+
+<h2 id="where-does-graphql-fit-in">Where does GraphQL fit in?</h2>
+
+<p>Enough about endpoint-based APIs, how does GraphQL handle caching?</p>
+
+<p>Due to the way GraphQL operates as a query language POSTing against a single endpoint, HTTP is demoted to the role of a dumb tunnel, making network caching tools like Varnish, Squid, Fastly, etc. entirely useless.</p>
+
+<p>With network caching removed from the equation, the responsibility of caching falls on application caching, with API developers crossing their fingers that clients are doing some caching too.</p>
+
+<p>The GraphQL site seems happy to suggest the client should take care of caching on their end:</p>
+
+<blockquote>
+  <p>In an endpoint-based API, clients can use HTTP caching to easily avoid refetching resources, and for identifying when two resources are the same. The URL in these APIs is a globally unique identifier that the client can leverage to build a cache. In GraphQL, though, there's no URL-like primitive that provides this globally unique identifier for a given object. It's hence a best practice for the API to expose such an identifier for clients to use.
+– Source: <a href="http://graphql.org/learn/caching/">graphql.org</a></p>
+</blockquote>
+
+<p>In an ideal world, all clients would implement client caching, but a lot don't. Many HTTP clients (gems, packages, etc. that make the actual HTTP requests, or HTTP layers for frameworks like EmberData) either make it easier, or handle it seamlessly for clients, but they utilize the same parts of the HTTP specification that cache proxies do: <code>Etag</code>, <code>Cache-Control</code>, etc. These approaches work for endpoint-based APIs, but not for GraphQL.</p>
+
+<p>Without that meta data, client caching automatically for GraphQL becomes seemingly impossible. Facebook has released <a href="https://github.com/facebook/dataloader">DataLoader</a> which can make GraphQL client caching easier, but clients not using NodeJS will have to port the logic, or continue to roll their own. If client caching is ignored (seen as too complicated, or not advertised as useful well enough), an "endpoint-based" API is still provided some protection against repeated requests by utilizing network caching.</p>
+
+<p>Endpoint-based APIs can cache in all three ways, but GraphQL can only handle the two, and one of those kinda poorly. Maybe some GraphQL specific cache proxies exist, but this software will not be as battle tested as the HTTP cache proxies mentioned… if they exist.</p>
+
+<p>REST is potentially onto a winner here. So long as application and network caching are actually implemented.</p>
+
+<h2 id="customisation--cache-misses">Customisation = Cache Misses</h2>
+
+<p>The flip side of that coin is this: the more <code>customisable</code> an endpoint-based API becomes, the higher the cache miss rate, and the less useful network caching becomes for that API.</p>
+
+<p>Something I talked about a lot in the <a href="/api/2017/01/24/graphql-vs-rest-overview/">GraphQL vs REST: Overview</a> article is that REST is often considered to force the return of all the data, whilst GraphQL makes you specify the fields you would like returned. I explained the fact that REST APIs can absolutely do the same thing, but this can reduce the likelihood of a cache hit.</p>
+
+<p>Consider this example for an endpoint-based API with network caching, that offers sparse fieldsets:</p>
+
+<ol>
+  <li>Client A requests <code>GET /turtles?fields=name,lifespan</code> responds in 200ms</li>
+  <li>Client B requests <code>GET /turtles?fields=name</code> 192ms</li>
+</ol>
+
+<p>Client B was hoping for a quicker response thanks to requesting a smaller response, which is kinda true as it shaved a bit of time off, but sadly it resulted in a cache miss as the network cache would consider those two URLs entirely different requests. If the application caching was not set up appropriately, or the data is not something that is cacheable, then both requests would be fairly slow.</p>
+
+<p>The same scenario for an endpoint-based API with network caching, that <strong>does not</strong> offer sparse fieldsets:</p>
+
+<ol>
+  <li>Client A requests <code>GET /turtles</code> responds in 220ms</li>
+  <li>Client B requests <code>GET /turtles</code> responds in 118ms</li>
+</ol>
+
+<p>Because Client A and Client B are being less picky with their responses, they can reuse the request, saving the application server from getting involved, and making the "page load quicker" or whatever is going on.</p>
+
+<h2 id="so-who-wins">So who wins?!</h2>
+
+<p>If an endpoint-based API is super customisable, network caching becomes somewhat less useful, turning it into a complex micro-optimization, and forcing an API down the route of really thinking through their data caching, and data structures, just the same as GraphQL API developers are forced to do.</p>
+
+<p>Building a generic API that is expected to respond to all clients fairly similarly? Then using endpoint-based APIs (REST 👍) will make caching easy for everyone, and GraphQL misses out on a point here.</p>
+
+<p>Building a super-flexible API for a lot of different clients making loads of different requests? Either GraphQL or endpoint-based APIs will have the same limitations when it comes to application caching and structuring data, so use other pros and cons to help you decide.</p>
+
+<p>However you look at it, GraphQL certainly isn't "better" at caching, but it might force API developers to structure data in a more scalable way. Maybe that is a massive waste of time as developers spend months prematurely optimizing an API before its even launched, or maybe it will help get the API "web scale" nice and early. You decide.</p>
+
+          <hr>
+<p>More on GraphQL:</p>
+<ul>
+  <li>
+    <a href='/api/2017/01/24/graphql-vs-rest-overview/'>GraphQL vs REST: Overview</a>
+  </li>
+  <li>
+    <a href='/api/2017/01/26/graphql-vs-rest-caching/'>GraphQL vs REST: Caching</a>
+  </li>
+  <li>
+    <a href='/api/2017/04/18/you-might-not-need-graphql/'>You Might Not Need GraphQL</a>
+  </li>
+  <li>
+    <a href='/api/2017/06/19/representing-state-in-rest-and-graphql/'>Representing State in REST and GraphQL</a>
+  </li>
+</ul>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/api/2017/01/24/graphql-vs-rest-overview/">GraphQL vs REST: Overview</a>
+                </p>
+                <p style="float:right">
+                    Next:
+                    <a class="button" href="/api/2017/04/18/you-might-not-need-graphql/">You Might Not Need GraphQL</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

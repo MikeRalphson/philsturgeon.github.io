@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/">
+  <meta name="twitter:description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+    <div class='teaserimage'>
+  <div class='teaserimage-image' style='background-image: url(/images/cover.jpg)'>
+    Sunny and Umoja got on the cider
+  </div>
+</div>
+<header class='blog-header'>
+  <a class='blog-logo' href='/' style='background-image: url(/images/logo.jpg)'>
+    Phil Sturgeon
+  </a>
+  <h1 class='blog-title'>Phil Sturgeon</h1>
+  <h2 class='blog-description'>Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+  <div class='custom-links'>
+    <a class='icon-social[:icon]' href='https://twitter.com/philsturgeon'>
+      <i class='fa fa-twitter'></i>
+    </a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a class='icon-social[:icon]' href='https://github.com/philsturgeon'>
+      <i class='fa fa-github'></i>
+    </a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href='/about/'>About</a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href='/books/'>Books</a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href='/speaking/'>Speaking</a>
+  </div>
+</header>
+
+
+    <!-- content start -->
+
+    <div class="page-content">
+      <div class="wrapper">
+        <main class='content' role='main'>
+  <div class='cf frame'>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>My previous article explained the divergence between OpenAPI and JSON Schema (a.k.a the subset/superset/sideset problem), and promised solutions. One of those solutions is a tangible thing, which you can install right now! The other is now ready for tool vendors to start considering.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2018-04-13 13:44:00 UTC'>
+            Apr 13 2018
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-json-schema'>
+            <a href="/tag/json-schema/">#json-schema</a>
+          </span>
+          <span class='post-tag-api-specs'>
+            <a href="/tag/api-specs/">#api-specs</a>
+          </span>
+          <span class='post-tag-openapi'>
+            <a href="/tag/openapi/">#openapi</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>This article is going to explain the divergence between OpenAPI and JSON Schema, which I've been calling the subset/superset/sideset problem. It'll finish up explaining how we're going to solve it, and ~I'll write part 2 when it is solved~ part two explains the solution.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2018-03-30 16:44:00 UTC'>
+            Mar 30 2018
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-json-schema'>
+            <a href="/tag/json-schema/">#json-schema</a>
+          </span>
+          <span class='post-tag-api-specs'>
+            <a href="/tag/api-specs/">#api-specs</a>
+          </span>
+          <span class='post-tag-openapi'>
+            <a href="/tag/openapi/">#openapi</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>Back in October I wrote Chasing the Perfect API Specification Workflow, which was a huge article about the state of the API specification world. One person trying to figure out a good workflow, in a sea of alternative specifications, with incomplete tooling, making it hard to see a solution for all the partial bits of functionality.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2018-03-01 07:47:00 UTC'>
+            Mar  1 2018
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-json-schema'>
+            <a href="/tag/json-schema/">#json-schema</a>
+          </span>
+          <span class='post-tag-api-specs'>
+            <a href="/tag/api-specs/">#api-specs</a>
+          </span>
+          <span class='post-tag-openapi'>
+            <a href="/tag/openapi/">#openapi</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2018/01/20/rest-confusion-explained-further/">Still Going on REST is the new SOAP</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>The misunderstandings on REST continue, and I'm happy to explain them all up!</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2018-01-20 22:38:00 UTC'>
+            Jan 20 2018
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-rest'>
+            <a href="/tag/rest/">#rest</a>
+          </span>
+          <span class='post-tag-rpc'>
+            <a href="/tag/rpc/">#rpc</a>
+          </span>
+          <span class='post-tag-soap'>
+            <a href="/tag/soap/">#soap</a>
+          </span>
+          <span class='post-tag-http2'>
+            <a href="/tag/http2/">#http2</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2017/12/18/rest-confusion-explained/">A Response to REST is the new SOAP</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>This article outlines a list of common misunderstandings about REST, so I thought it would be a nice opportunity to set the record straight on a bunch of them. The article is really just 100% misunderstandings, so lets learn some stuff!</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2017-12-18 18:32:00 UTC'>
+            Dec 18 2017
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-rest'>
+            <a href="/tag/rest/">#rest</a>
+          </span>
+          <span class='post-tag-rpc'>
+            <a href="/tag/rpc/">#rpc</a>
+          </span>
+          <span class='post-tag-soap'>
+            <a href="/tag/soap/">#soap</a>
+          </span>
+          <span class='post-tag-http2'>
+            <a href="/tag/http2/">#http2</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2017/08/26/one-month-since-openapi-v3-0/">One Month Since OpenAPI v3.0</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>Last month today OpenAPI v3.0 was released, and not only is there a lot of cool stuff, but it unblocks some akward situations with vendor prefixes and other lacking features. I was hoping the tooling would be hot on its tails. Progress is being made in all of the repositories I've got my eyes on, but sadly v3.0 support is not there yet.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2017-08-26 07:47:00 UTC'>
+            Aug 26 2017
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-json-schema'>
+            <a href="/tag/json-schema/">#json-schema</a>
+          </span>
+          <span class='post-tag-api-specs'>
+            <a href="/tag/api-specs/">#api-specs</a>
+          </span>
+          <span class='post-tag-openapi'>
+            <a href="/tag/openapi/">#openapi</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2017/08/13/a-happy-compromise-between-customization-and-cacheability/">A Happy Compromise Between Customization and Cacheability</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>With endpoint-based APIs you get to choose if you want increased likelihood of network cache hits, or the ability to slim down the response. The two goals are mutually exclusive, but there is a compromise that can be made.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2017-08-13 17:12:00 UTC'>
+            Aug 13 2017
+          </time>
+          <span class='post-tag-hypermedia'>
+            <a href="/tag/hypermedia/">#hypermedia</a>
+          </span>
+          <span class='post-tag-hateoas'>
+            <a href="/tag/hateoas/">#hateoas</a>
+          </span>
+          <span class='post-tag-graphql'>
+            <a href="/tag/graphql/">#graphql</a>
+          </span>
+          <span class='post-tag-rest'>
+            <a href="/tag/rest/">#rest</a>
+          </span>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-http'>
+            <a href="/tag/http/">#http</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/">Chasing the Perfect API Specification Workflow</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>Documentation is a nice thing to have, but it is often treated as optional or superfluous, especially in teams where the clients and servers are managed by the same people. Here the code is considered the contract, so why define it again in documentation?</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2017-07-20 15:32:00 UTC'>
+            Jul 20 2017
+          </time>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-json-schema'>
+            <a href="/tag/json-schema/">#json-schema</a>
+          </span>
+          <span class='post-tag-api-specs'>
+            <a href="/tag/api-specs/">#api-specs</a>
+          </span>
+          <span class='post-tag-openapi'>
+            <a href="/tag/openapi/">#openapi</a>
+          </span>
+          <span class='post-tag-raml'>
+            <a href="/tag/raml/">#raml</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2017/06/19/representing-state-in-rest-and-graphql/">Representing State in REST and GraphQL</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>It's very common for APIs to be treated like "databases over HTTP", with clients expected to infer state from a collection of boolean switches and date fields. Stop this with HATEOAS.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2017-06-19 22:56:00 UTC'>
+            Jun 19 2017
+          </time>
+          <span class='post-tag-hypermedia'>
+            <a href="/tag/hypermedia/">#hypermedia</a>
+          </span>
+          <span class='post-tag-hateoas'>
+            <a href="/tag/hateoas/">#hateoas</a>
+          </span>
+          <span class='post-tag-graphql'>
+            <a href="/tag/graphql/">#graphql</a>
+          </span>
+          <span class='post-tag-rest'>
+            <a href="/tag/rest/">#rest</a>
+          </span>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-http'>
+            <a href="/tag/http/">#http</a>
+          </span>
+        </div>
+      </div>
+    </article>
+    <article class='post' itemscope itemtype='http://schema.org/BlogPosting' role='article'>
+      <div class='article-item'>
+        <header class='post-header'>
+          <h2 class='post-title' itemprop='name'>
+            <a itemprop="url" href="/api/2017/04/18/you-might-not-need-graphql/">You Might Not Need GraphQL</a>
+          </h2>
+        </header>
+        <section class='post-excerpt' itemprop='description'>
+          <p>After writing about how GraphQL and REST differ in various regards, and taking a closer look at caching in particular, I wanted to write about how you can get some of the benefits of GraphQL into an existing endpoint-based API.</p>
+        </section>
+        <div class='post-meta'>
+          <time datetime='2017-04-18 03:56:00 UTC'>
+            Apr 18 2017
+          </time>
+          <span class='post-tag-graphql'>
+            <a href="/tag/graphql/">#graphql</a>
+          </span>
+          <span class='post-tag-rest'>
+            <a href="/tag/rest/">#rest</a>
+          </span>
+          <span class='post-tag-api'>
+            <a href="/tag/api/">#api</a>
+          </span>
+          <span class='post-tag-http'>
+            <a href="/tag/http/">#http</a>
+          </span>
+        </div>
+      </div>
+    </article>
+  </div>
+  <div class='pagination'>
+    <ul>
+      <li class='active'>
+        <span>1</span>
+      </li>
+      <li>
+        <a href="/page/2/">2</a>
+      </li>
+      <li>
+        <a href="/page/3/">3</a>
+      </li>
+      <li class='page-next'>
+        <a href="/page/2/">Next</a>
+      </li>
+    </ul>
+  </div>
+</main>
+
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

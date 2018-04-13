@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>Design-first API Specification Workflow Matures | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="Design-first API Specification Workflow Matures" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="Back in October I wrote Chasing the Perfect API Specification Workflow, which was a huge article about the state of the API specification world. One person trying to figure out a good workflow, in a sea of alternative specifications, with incomplete tooling, making it hard to see a solution for all the partial bits of functionality." />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2018/03/01/api-specification-workflow-matures/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="Design-first API Specification Workflow Matures | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2018/03/01/api-specification-workflow-matures/">
+  <meta name="twitter:description" content="Back in October I wrote Chasing the Perfect API Specification Workflow, which was a huge article about the state of the API specification world. One person trying to figure out a good workflow, in a sea of alternative specifications, with incomplete tooling, making it hard to see a solution for all the partial bits of functionality.">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">Design-first API Specification Workflow Matures</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2018-03-01 07:47:00 UTC">
+                Mar  1 2018
+              </time>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/json-schema/">#json-schema</a>
+              <a href="/tag/api-specs/">#api-specs</a>
+              <a href="/tag/openapi/">#openapi</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <hr>
+
+          <p>Back in October I wrote <em><a href="https://philsturgeon.uk/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/">Chasing the Perfect API Specification Workflow</a></em>, which was a huge article about the state of the API specification world. One person trying to figure out a good workflow, in a sea of alternative specifications, with incomplete tooling, making it hard to see a solution for all the partial bits of functionality.</p>
+
+<p>RAML and API Blueprint fell short of my requirements very quickly, and OpenAPI v3 was not available at the time of writing.</p>
+
+<p>The initial requirements:</p>
+
+<ul>
+  <li>API Design / Prototyping</li>
+  <li>One source of truth where developers need to update stuff</li>
+  <li>Beautiful documentation for humans built without any effort</li>
+  <li>Validate payloads before you send em on the client side</li>
+  <li>RSpec matchers providing contract testing API responses</li>
+  <li>Documentation testing to confirm docs arent lies</li>
+  <li>SDK Generators with customisable templates</li>
+</ul>
+
+<p>OpenAPI v2.0 scored a 71% for those requirements, and the drastically improved (but frustratingly out of reach) OpenAPI v3.0 scored 86%. Tooling seemed very slow to move to OpenAPI v3, and <a href="https://philsturgeon.uk/api/2017/08/26/one-month-since-openapi-v3-0/">a month after v3.0 was launched</a>, pretty much nothing supported it.</p>
+
+<p>JSON Schema divergence was huge, and with v2 missing oneOf, allOf, etc. it was difficult to write good specs for APIs with more "dynamic" contracts. At work we battled through the best we could, building as much documentation with OpenAPI v2 as possible. We actually did fairly well, but it was a stack of hacks and vendor extensions. It was painful to teach and depressing to use, but now, thankfully, we're on OpenAPI v3.0!!</p>
+
+<h2 id="openapi-v30">OpenAPI v3.0</h2>
+
+<p>Right now my main goal has been <a href="https://blog.apisyouwonthate.com/turning-contracts-into-beautiful-documentation-deac7013af18">generating human-readable documentation</a> at the day job. With new employees starting every day, we need people to know how our many many many APIs work. Documentation is not the most interesting thing about API specifications by any means, but it's currently the most relevant at my job.</p>
+
+<p><a href="https://github.com/Rebilly/ReDoc">ReDoc</a> was our documentation generator of choice, and it only supported v2.0 for a while. When the <a href="https://github.com/Rebilly/ReDoc/releases">ReDoc 2.0.0 alpha builds</a> started popping up supporting OpenAPI v3.0 we jumped on them, and helped discover a whole bunch of bugs. ReDoc author <a href="https://twitter.com/RomanHotsiy">Roman Hotsiy</a> was an absolute champion, fixing bugs and cutting alpha builds on a regular basis.</p>
+
+<p>Thanks to ReDoc's use of <a href="https://github.com/Mermade/swagger2openapi/">swagger2openapi</a> as a compatibility layer, OpenAPI v2/v3 are both supported. Our bevy of quirky API specs helped swagger2openapi author <a href="https://twitter.com/PermittedSoc">Mike Ralphson</a> to isolate a bunch of bugs, and really test out the amazing new resolver logic in <a href="https://github.com/Mermade/swagger2openapi/releases">v2.12.0</a> betas. We have a build step that converts our OpenAPI v2 specs to v3 using 2.12.0-5, as ReDoc is still using 2.11.x and that's not quite so good at handling giant/self-referential schemas.</p>
+
+<p>Certainly I'm not recommending you go screaming into using an alpha and a beta, but we are using these a whole bunch and have no more problems to report. If you want OpenAPI v3.0, give them a try.</p>
+
+<h2 id="improving-specifications">Improving Specifications</h2>
+
+<p>A few months ago I came up with a medal system, to help give people an idea of where their docs/specs are at, and to give readers of the docs an idea of how much they could trust the docs.</p>
+
+<ul>
+  <li>🏅 Gold - Guaranteed accurate against code, thanks to the use of Dredd or JSON Schema Matchers, which means the API build will fail if the specification is lying</li>
+  <li>🥈 Silver - Not guaranteed to be entirely accurate, but confidence levels are high. There may be minor discrepancies.</li>
+  <li>🥉 Bronze - Hey look, at least there's something… 😅</li>
+</ul>
+
+<p>Most things started off at bronze, as we just jammed some outdated Postman Collection through the <a href="https://apimatic.io/transformer">APImatic Transformer</a> and were left with glorified bookmark collections of content. These Postman Collections were missing all sorts of metadata, descriptions, explanations, so the transformer generated rather lacking content, and this gave them a bronze.</p>
+
+<p>Of course this ruffled a few feathers. Bronze was seen as a bit of a face slap, but that is pretty much the point. "These docs are not good, but they could be if you…" The fact that people cared at all was fantastic, and it meant that people actually put quite a lot of time into getting to Silver. To do that, we crowd-sourced a style guide, sharing tips, advice, recommending file structures, etc.</p>
+
+<p>We found also that being honest about the quality of a specific APIs docs improved trust for other docs. If a user looked at some crap docs, they might just think that "docs are no more use than Postman", which is entirely inaccurate and has been a problem in the past. Marking poor docs as poor, and good docs as good, means everyone knows what to expect.</p>
+
+<p>A lot of the work from our style guide resulted in <a href="https://github.com/wework/speccy">Speccy</a>, an open-source OpenAPI v3.x linter for making specs be good, not just valid.</p>
+
+<h2 id="keeping-up-to-date">Keeping Up-to-Date</h2>
+
+<p>Getting folks onto Gold is the next mission. <a href="https://blog.apisyouwonthate.com/keeping-documentation-honest-d9ab5351ddd4">Keeping Documentation Honest</a> outlines a few approaches to doing this.</p>
+
+<p>Short version…</p>
+
+<h3 id="dredd">Dredd</h3>
+
+<p>The tool <a href="https://github.com/apiaryio/dredd">Dredd</a> was initially designed for API Blueprint, added support for OpenAPI a while back. It's written in JavaScript and can be seen as a completely different test suite to your usual PHPUnit/RSpec/whatever. You need to set up data in seeds at the start, and be aware that tests keep state so order is very important. Run it with <code>--sorted</code> to limit the damage  there.</p>
+
+<h3 id="json-matchers">JSON Matchers</h3>
+
+<p>Writing JSON Schema files instead of OpenAPI for your schema objects brings a lot of value, like being able to skip Dredd and confirm your responses using JSON Schema.</p>
+
+<p>Ruby folks can use <a href="https://github.com/thoughtbot/json_matchers">thoughtbot/json_matchers</a>, and PHP users can make a simple helper method for their test suite by wrapping <a href="http://json-guard.thephpleague.com/">JSON Guard</a>.</p>
+
+<p>The only downside here is having to convert a lot of files from YAML to JSON, but that can be done quickly in a lot of ways. Try <a href="https://atom.io/packages/atom-yamljson">atom-yamljson</a>.</p>
+
+<h3 id="to-be-confirmed">To Be Confirmed</h3>
+
+<p>A whacky alternative approach is code generation, which in some languages could quite likely be done at runtime, or artifacts could be compiled earlier. Either way, by referencing the OpenAPI file in your controller, or in a middleware, your actual production code, you could validate request bodies, query string parameters, etc, all based off of the contract itself!</p>
+
+<p>Why write up all that Rails/PHP/whatever code if you can have your existing contract do it for you? Imagine not having to write the same validation rules in multiple places then also write tests to make sure they're the same.</p>
+
+<p>This approach needs more validation. I know it's going to work, but I've not had the time to test anything, or get anything into production. Rails users can try it out with this prototype gem <a href="https://github.com/amcaplan/swagger_shield/">SwaggerShield</a>.</p>
+
+<h2 id="postman-mirroring">Postman Mirroring</h2>
+
+<p>We have some hardcore Postman users, who manually provide examples for every response, write all their tests to ensure contracts are up-to-date, write descriptions for all their parameters in the postman collection, and have the collection reading from their GitHub repo. It's impressive how dedicated they are to maintaining this, but 90% of people do not put in the work, and the Postman Collections are outdated and missing metadata.</p>
+
+<p>For those who chose to Postman First, we use <a href="https://apimatic.io/transformer">APImatic Transformer</a> to import Postman, and output OpenAPI v3.0 for our documentation hub to use. For everyone else we do the opposite! We have CircleCI build a job hourly that clones down all the repos, plucks out the OpenAPI specs, and fires it off at the Postman Pro API to update the View-only Postman Collections shared with the whole team!</p>
+
+<p>This gives people the ability to play with their API in Postman, without ever needing to worry about maintaining anything.</p>
+
+<p>It also means we can very easily support Paw, or whatever other HTTP client comes out with support for shared collections. It's nice to not be tied to a specific vendor. :)</p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>As always there is more to be done.</p>
+
+<h3 id="api-gateway-support">API Gateway Support</h3>
+
+<p>Server-side validation might not be entirely realistic for everyone, especially due to all the various frameworks that would need adapters built. So for now I'm talking to Kong about getting OpenAPI or JSON Schema support, where we can reference specs for specific requests to skip even bothering the application server.</p>
+
+<p><img alt="Sequence flow diagram showing API gateway validation skipping the application server" src="/images/article_images/2018-03-01-api-specification-workflow-matures/api-gateway-json-schema.png" /></p>
+
+<p>Solving this at a higher level is appealing as it avoids the need to write 15 different framework plugins in 9 different languages, but that makes confirming the request validation in integration tests a little harder. We might need to move to API monitoring tests instead for that, but… I digress.</p>
+
+<p><a href="https://tyk.io/">Tyk</a> has <a href="https://github.com/TykTechnologies/tyk/pull/1343">just merged JSON Schema Draft v4 support</a>, but it's a little tricky to imagine JSON Schema alone (not even HyperSchema) being easy to hook up, all the URLs, HTTP methods, paths, etc. are in the OpenAPI layer. It might be a bit of a manual effort instead of saying "Here's an entire OpenAPI file, you figure it out!"</p>
+
+<p>Either way, I quite like the idea of not even bothering the application server until we're relatively confident the payload is valid. Of course you'll still have to hit it for certain validation requests (is this email unique) but you can absolutely skip "that value is not an email address".</p>
+
+<h3 id="editors">Editors</h3>
+
+<p>There are <a href="http://openapi.tools/#editors">multiple editors</a> out there, some with GUI options and some are more like Eclipse distributions with a few plugins for OAI syntax… I need to find one to recommend to my coworkers, as a way to get folks building out OpenAPI specs without having to learn it all and mess around by hand.</p>
+
+<p><a href="http://stoplight.io/">Stoplight.io</a> have a <a href="http://stoplight.io/platform/design/">beautiful API editor</a>, which eventually I think is going to have local clients for OS X, Linux, etc. but right now is web only. This might be the winner, if folks an click around a super easy API Editor, build out good DRY OpenAPI specifications, have changes committed along with their PRs, etc. then we're pretty much sorted there.</p>
+
+<p>If not I'll try to hook up <code>$ speccy edit</code> to launch one of the Node editors, and run that on a local server. So far none of them seem to support editing files in place, or multiple files. It's all import then export the product, which isn't really achieving the workflow I want.</p>
+
+<h3 id="speccy">Speccy</h3>
+
+<p>We really need a <code>speccy init</code> which will create a simple file structure, asking a few questions, and essentially making a hello world. Getting folks a basic file to play around with will be a lot more useful than asking them to start from scratch.</p>
+
+<p>Speccy also really <a href="https://github.com/wework/speccy/issues/14">needs a config file</a>, and somebody is threatening to <a href="https://twitter.com/DanHerd/status/968221934591889413">make a VS Code plugin</a>.</p>
+
+<h3 id="client-side-validation">Client-side validation</h3>
+
+<p>Not got around to getting anything into production, because… well 👆 &amp; 👇, but I am currently seeking volunteers at work. I did whoever write up a whole <a href="https://blog.apisyouwonthate.com/the-many-amazing-uses-of-json-schema-client-side-validation-c78a11fbde45">guide on using JSON Schema for client-side validation</a> using JavaScript, so let me know how it goes if you try it out.</p>
+
+<h3 id="sdk-generation">SDK Generation</h3>
+
+<p>I really need to dig in to the options here, and find "the best" tool for the job. There are a lot of platforms like Stoplight, Apigee, SwaggerHub, etc. that try to do all the things, and they all do a different "some" of the things. I don't want to be forced into any one of them tbh, but if we can use a single service without duplicating efforts and functionality too much then I'd be happy to use them.</p>
+
+<p>A CLI tool which we can write templates for would be ideal, which… <a href="https://github.com/swagger-api/swagger-codegen">Swagger CodeGen</a> caaaaan do, but the output seems a bit funky. More work to be done, update on this next braindump.</p>
+
+<h3 id="openapi-and-json-schema-convergence">OpenAPI and JSON Schema Convergence</h3>
+
+<p>As mentioned OpenAPI and JSON Schema are not entirely compatible, and this leads to most of the trouble right now. Sometimes you want OpenAPI, sometimes you want JSON Schema, and between the two you can do 100% of the things I want.</p>
+
+<p>Sadly OpenAPI v3.0 still supports it's own mildly different version of JSON Schema, which is roughly JSON Schema Draft v5, but it's a sub-set super-set. Some things are missing, some things are different, and some keywords exist for OpenAPI schema objects that have no meaning to JSON Schema validators…</p>
+
+<p>This situation is a known problem for JSON Schema and OAI maintainers. I've been on a few calls with both teams discussing how to solve it, and so far it seems like adding "Alternative Syntax" is the way to go. OpenAPI could keep its own schema objects (JSON Schema-ish-kinda) and a new keyword is added to signify a <code>$ref</code>'ed file is JSON Schema Draft v8 proper (no messin).</p>
+
+<p>For now you're stuck either trying to write a file thats valid for both systems (just hope you don't need <code>type: ['string', 'null']</code>), or converting from <a href="https://github.com/mikunn/openapi-schema-to-json-schema">one to the other</a> to get the best of both… This needs to change.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>I'm getting pretty close to having a workflow I'm completely happy with for spec-first API design and development. As always walking the line between idealism and realism, suggesting one thing to folks to do for now, whilst trying to improve things for our future selves to transition to when the time is right.</p>
+
+<p>Having folks now writing OpenAPI v3.0 by hand is tough, but at least we're not on a myriad of vendor hacks shoved into some weird OpenAPI v2.0 with some v3.0 shimmed in nonsense… Postman Mirroring has got a few folks excited, and of those who are excited they're really being helped out with speccy.</p>
+
+<p>Finding a kick-ass editor to recommend will be ridiculously important in getting other people on board, and if we can get a few of those gold medal APIs to expose their JSON Schema objects for folks to client-side validate… getting folks to pour effort into specs should no longer be such an uphill battle.</p>
+
+<p>Then we just need to get better at keeping out docs up to date, with either API Gateway implementations or server-side validation with tools like SwaggerShield ensuring the incoming stuff is correct, and contract testing responses in the application.</p>
+
+<p>Making progress ey?</p>
+
+<p>All of this stuff is being blogged and booked about over at <a href="https://apisyouwonthate.com">APIs You Won't Hate</a> as I go, so pre-order a copy of the partially written <a href="https://apisyouwonthate.com/books/surviving-other-peoples-apis.html">Surviving Other People's APIs</a> to get more in depth reading material.</p>
+
+          <hr>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/api/2018/01/20/rest-confusion-explained-further/">Still Going on REST is the new SOAP</a>
+                </p>
+                <p style="float:right">
+                    Next:
+                    <a class="button" href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

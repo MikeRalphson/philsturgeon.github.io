@@ -1,0 +1,1105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Phil Sturgeon</title>
+  <subtitle>Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</subtitle>
+  <id>https://philsturgeon.uk/</id>
+  <link href="https://philsturgeon.uk/"/>
+  <link href="https://philsturgeon.uk/feed.xml" rel="self"/>
+  <updated>2018-04-13T09:44:00-04:00</updated>
+  <author>
+    <name>Phil Sturgeon</name>
+  </author>
+  <entry>
+    <title>OpenAPI and JSON Schema Divergence: Part 2</title>
+    <link rel="alternate" href="https://philsturgeon.uk/api/2018/04/13/openapi-and-json-schema-divergence-solved/"/>
+    <id>https://philsturgeon.uk/api/2018/04/13/openapi-and-json-schema-divergence-solved/</id>
+    <published>2018-04-13T09:44:00-04:00</published>
+    <updated>2018-04-13T12:14:11-04:00</updated>
+    <summary type="html">My previous article explained the divergence between OpenAPI and JSON Schema (a.k.a the subset/superset/sideset problem), and promised solutions. One of those solutions is a tangible thing, which you can install right now! The other is now ready for tool vendors to start considering.</summary>
+    <content type="html">&lt;p&gt;My &lt;a href="/api/2018/03/30/openapi-and-json-schema-divergence/"&gt;previous article&lt;/a&gt; explained the divergence between &lt;a href="https://github.com/OAI/OpenAPI-Specification"&gt;OpenAPI&lt;/a&gt; and &lt;a href="http://json-schema.org/"&gt;JSON Schema&lt;/a&gt; (a.k.a the subset/superset/sideset problem), and promised solutions. One of those solutions is a tangible thing, which you can install right now! The other is now ready for tool vendors to start considering.&lt;/p&gt;
+
+&lt;p&gt;To briefly recap: OpenAPI v3 declares it supports JSON Schema, but there are &lt;a href="https://swagger.io/docs/specification/data-models/keywords/"&gt;more caveats than I can ever remember&lt;/a&gt; to that.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="Carefully writing JSON Schema for your data model kiiiinda works" src="/images/article_images/2018-03-30-openapi-and-json-schema-divergence/data-model-service-model.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;So, if you try to use JSON Schema for your data models, and OpenAPI as the service layer (the glue!) then you bump into errors like this:&lt;/p&gt;
+
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;speccy lint docs/openapi.yml
+Specification schema is invalid.
+
+&lt;span class="c"&gt;#/paths/~1foo/post/requestBody/content/application~1json/properties/user_uuid&lt;/span&gt;
+expected Array &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="s1"&gt;'string'&lt;/span&gt;, &lt;span class="s1"&gt;'null'&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; to be a string
+    expected Array &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="s1"&gt;'string'&lt;/span&gt;, &lt;span class="s1"&gt;'null'&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; to have &lt;span class="nb"&gt;type &lt;/span&gt;string
+        expected &lt;span class="s1"&gt;'object'&lt;/span&gt; to be &lt;span class="s1"&gt;'string'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;a href="https://github.com/wework/speccy"&gt;Speccy&lt;/a&gt; is a linter we built at WeWork to validate and make recommendations, like rubocop or eslint, but for OpenAPI.&lt;/p&gt;
+
+&lt;p&gt;Not only will Speccy consider this invalid, no other OpenAPI/Swagger validator will validate this, and most tools run validation before doing their job.&lt;/p&gt;
+
+&lt;p&gt;Postman mirroring via &lt;a href="https://apimatic.io/transformer"&gt;APIMatic Transformer&lt;/a&gt; fails.&lt;/p&gt;
+
+&lt;p&gt;SDK generation fails.&lt;/p&gt;
+
+&lt;p&gt;Everything fails.&lt;/p&gt;
+
+&lt;h2 id="step-1-converting-openapi-to-json-schema"&gt;Step 1: Converting OpenAPI to JSON Schema&lt;/h2&gt;
+
+&lt;p&gt;Before we worry about how everything is going to fit together, we need the ability to convert from JSON Schema to OpenAPI-specific schema objects (that conform to as many of those caveats as possible).&lt;/p&gt;
+
+&lt;p&gt;This was promptly solved with a new NPM package: &lt;a href="https://github.com/wework/json-schema-to-openapi-schema"&gt;json-schema-to-openapi-schema&lt;/a&gt;! It was quick to release thanks to an existing package: &lt;a href="https://github.com/mikunn/openapi-schema-to-json-schema"&gt;openapi-schema-to-json-schema&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Creating json-schema-to-openapi was mostly just a case of flipping the tests around, and changing a bunch of the code to just do the opposite of whatever it was doing before.&lt;/p&gt;
+
+&lt;pre class="highlight javascript"&gt;&lt;code&gt;&lt;span class="kr"&gt;const&lt;/span&gt; &lt;span class="nx"&gt;toOpenApi&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nx"&gt;require&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;'json-schema-to-openapi-schema'&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+
+&lt;span class="kr"&gt;const&lt;/span&gt; &lt;span class="nx"&gt;schema&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+  &lt;span class="s1"&gt;'$schema'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'http://json-schema.org/draft-04/schema#'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+  &lt;span class="na"&gt;type&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'string'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'null'&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+  &lt;span class="na"&gt;format&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'date-time'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;span class="p"&gt;};&lt;/span&gt;
+
+&lt;span class="nx"&gt;console&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nx"&gt;log&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;toOpenApi&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nx"&gt;schema&lt;/span&gt;&lt;span class="p"&gt;));&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The example prints out:&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;{
+  type: 'string',
+  format: 'date-time',
+  nullable: true
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here's a full list of the conversions it'll make:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Strip &lt;code&gt;$schema&lt;/code&gt; and &lt;code&gt;id&lt;/code&gt; from root, which are both invalid keywords in OpenAPI&lt;/li&gt;
+  &lt;li&gt;Switches &lt;code&gt;type: ['foo', 'null']&lt;/code&gt; to &lt;code&gt;type: foo&lt;/code&gt; and &lt;code&gt;nullable: true&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Switches &lt;code&gt;patternProperties&lt;/code&gt; to &lt;code&gt;x-patternProperties&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Converts &lt;code&gt;dependencies&lt;/code&gt; to an allOf + oneOf OpenAPI-valid equivalent&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Huge props to Henry Andrews (author of the latest JSON Schema drafts) for providing the relevant OpenAPI to convert "dependencies" to. More conversions will need to be made, but I believe 99% of the likely uses are covered.&lt;/p&gt;
+
+&lt;p&gt;Henry is also going to be releasing some code to help make this package support multiple drafts of JSON Schema, for now it's only draft 4/5 (they're pretty much the same thing).&lt;/p&gt;
+
+&lt;h2 id="step-2-workflow"&gt;Step 2: Workflow&lt;/h2&gt;
+
+&lt;p&gt;Ok with that done, we need to figure out how and where we convert from JSON Schema to OpenAPI. There are probably a million potential workflows, but here's my recommendation.&lt;/p&gt;
+
+&lt;p&gt;Stuff you're doing locally with OpenAPI is usually checking the docs after editing the files, or linting things to see if your changes are ok. Seeing as these are two things Speccy can help with, it seems like a good idea to have Speccy know how to read JSON Schema files.&lt;/p&gt;
+
+&lt;p&gt;Default behaviour:&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ speccy lint docs/openapi.yml
+Specification schema is invalid.
+
+#/paths/~1invalidations/post/requestBody/content/application~1json/properties/user_uuid
+expected Array [ 'string', 'null' ] to be a string
+    expected Array [ 'string', 'null' ] to have type string
+        expected 'object' to be 'string'
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The new &lt;code&gt;--json-schema&lt;/code&gt; switch (&lt;code&gt;-j&lt;/code&gt; for short).&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;$ speccy lint docs/openapi.yml -j
+Specification is valid, with 0 lint errors
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The resolver built into Speccy checks for this switch, and treats &lt;code&gt;$ref&lt;/code&gt; like it might be a JSON Schema file. It's fairly harmless to make the assumption for aaaall &lt;code&gt;$ref&lt;/code&gt; calls, as it's only going to remove/convert specific keywords that are not valid OpenAPI anyway. 👍🏼&lt;/p&gt;
+
+&lt;p&gt;This feature will be released in &lt;a href="https://github.com/wework/speccy/milestone/4"&gt;Speccy v0.6.0&lt;/a&gt; which is still in development, but v0.6.0-3 is available. Run &lt;code&gt;npm i speccy@next&lt;/code&gt; to grab the development version and test it out.&lt;/p&gt;
+
+&lt;h2 id="this-helps-linting-but"&gt;This Helps Linting… but…&lt;/h2&gt;
+
+&lt;p&gt;Ok so you don't care about linting, you want to generate SDKs, sync to an automated Postman collection, or one of the other 23497487 things OpenAPI allows you to do, right? Speccy can't do all of that, but it can give you a pure OpenAPI file to play with.&lt;/p&gt;
+
+&lt;p&gt;The resolve command has been around for a while, hoisting &lt;code&gt;$ref&lt;/code&gt;'ed schemas up into the one file:&lt;/p&gt;
+
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;speccy resolve &lt;span class="nb"&gt;test&lt;/span&gt;/samples/json-schema/openapi.yaml
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If the &lt;code&gt;$ref&lt;/code&gt;'s point to a JSON Schema file, you're gonna get JSON Schema shoved in and it's going to make an invalid file.&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: OpenAPI /w JSON Schema Example
+paths:
+  /a:
+    get:
+      summary: foo
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $schema: 'http://json-schema.org/draft-04/schema#'
+                type: object
+                properties:
+                  foo:
+                    readOnly: true
+                    type: string
+                    example: '123'
+                  bar:
+                    type:
+                      - string
+                      - 'null'
+                    format: uuid
+                    example: '12345'
+                  baz:
+                    type:
+                      - string
+                      - 'null'
+                    format: date-time
+                required:
+                  - foo
+                  - bar
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This file is full of errors.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="Most valid JSON Schema files will trigger errors if they have some of the many keywords OpenAPI doesn't like, especially $schema." src="/images/article_images/2018-04-13-openapi-and-json-schema-divergence-solved/swagger-editor-unhappy.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;Using the magical new &lt;code&gt;-j&lt;/code&gt; switch, we can resolve ourselves a for realsies OpenAPI file:&lt;/p&gt;
+
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;speccy resolve &lt;span class="nb"&gt;test&lt;/span&gt;/samples/json-schema/openapi.yaml -j
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: OpenAPI /w JSON Schema Example
+paths:
+  /a:
+    get:
+      summary: foo
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  foo:
+                    readOnly: true
+                    type: string
+                    example: '123'
+                  bar:
+                    type: string
+                    format: uuid
+                    example: '12345'
+                    nullable: true
+                  baz:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - foo
+                  - bar
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Boom! No more type arrays, we got some nullable's in there so we've not lost any "optional" hints, and it's a perfectly valid OpenAPI file. Thanks Speccy!&lt;/p&gt;
+
+&lt;h2 id="a-more-proper-solution"&gt;A More Proper Solution&lt;/h2&gt;
+
+&lt;p&gt;This is not a perfect solution of course, it's a workaround. I don't want everyone having to use Speccy for the rest of time, but I did need to sort this out for folks at WeWork. We like having JSON Schema files be the source of truth (it makes &lt;a href="https://github.com/thoughtbot/json_matchers"&gt;contract testing really easy&lt;/a&gt;, and &lt;a href="https://blog.apisyouwonthate.com/the-many-amazing-uses-of-json-schema-client-side-validation-c78a11fbde45"&gt;client validation&lt;/a&gt; is awesome), but there needs to be a longer term plan.&lt;/p&gt;
+
+&lt;p&gt;Luckily, the folks at OpenAPI and JSON Schema are all talking to each other. On the weekly OpenAPI Technical Steering Committee call we hashed out a bit of a plan, and a &lt;a href="https://github.com/OAI/OpenAPI-Specification/issues/1532"&gt;sweeeeet proposal has been drafted&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I really like this new proposal:&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;openapi: 3.0.2
+info:
+  title: A sample using real JSON Schema and xsd
+  version: 1.0.0
+paths:
+  /:
+    get:
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              x-oas-draft-alternate-schema:
+                type: json-schema
+                externalValue: ./rootschema.json
+            application/xml:
+              x-oas-draft-alternate-schema:
+                type: xml-schema
+                externalValue: ./rootschema.xsd
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Let's try it out. Let's build it into stuff. I'm gonna have a go at making Speccy support it, I'll be poking folks to get it into projects like &lt;a href="https://rebilly.github.io/ReDoc/"&gt;ReDoc&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;If no unexpected problems show up with implementing this idea, we'll see this proposal appear as a feature in OpenAPI v3.1, and take over as the official &lt;code&gt;schema&lt;/code&gt; keyword in 4.0, killing the "divergence" issue forever.&lt;/p&gt;
+
+&lt;p&gt;Thanks to everyone working on this, including (but not limited to): Henry Andrews, Mike Ralphson, Darrell Miller, Daniel Goosby, and anyone else at WeWork I've been nagging for help whilst I fight my way through NodeJS'ing.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>OpenAPI and JSON Schema Divergence: Part 1</title>
+    <link rel="alternate" href="https://philsturgeon.uk/api/2018/03/30/openapi-and-json-schema-divergence/"/>
+    <id>https://philsturgeon.uk/api/2018/03/30/openapi-and-json-schema-divergence/</id>
+    <published>2018-03-30T12:44:00-04:00</published>
+    <updated>2018-04-13T10:30:05-04:00</updated>
+    <summary type="html">This article is going to explain the divergence between OpenAPI and JSON Schema, which I've been calling the subset/superset/sideset problem. It'll finish up explaining how we're going to solve it, and ~I'll write part 2 when it is solved~ part two explains the solution.</summary>
+    <content type="html">&lt;p&gt;This article is going to explain the divergence between OpenAPI and JSON Schema, which I've been calling the subset/superset/sideset problem. It'll finish up explaining how we're going to solve it, and ~I'll write part 2 when it is solved~ &lt;a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/"&gt;part two explains the solution&lt;/a&gt;.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Whenever talking about API specifications it is impossible to avoid mentioning OpenAPI and JSON Schema. They're the two main solutions for any sort of API that doesn't have a type system forcibly jammed into it by default.&lt;/p&gt;
+
+&lt;p&gt;Often you'll need OpenAPI for one thing, and JSON Schema for another. OpenAPI has &lt;a href="https://blog.apisyouwonthate.com/turning-contracts-into-beautiful-documentation-deac7013af18"&gt;amazing API documentation tools&lt;/a&gt;, fancy SDK generators, and handles loads of API-specific functionality that JSON Schema doesn't even go near. It also has a focus on keeping this static, for strictly typed languages, where properties should be 1 type and 1 type only.&lt;/p&gt;
+
+&lt;p&gt;JSON Schema focuses on very flexible data modeling with the same sort of validation vocabulary as OpenAPI, but for more flexible data sets. Whilst it doesn't focus just on APIs, by using more advanced vocabularies like &lt;a href="https://blog.apisyouwonthate.com/getting-started-with-json-hyper-schema-184775b91f"&gt;JSON Hyper-Schema&lt;/a&gt; it can model a fully RESTful API and its hypermedia controls (HATEOAS). JSON Schema can &lt;a href="https://blog.apisyouwonthate.com/the-many-amazing-uses-of-json-schema-client-side-validation-c78a11fbde45"&gt;offer server-defined client-side validation&lt;/a&gt;, and a bunch of other fantastic stuff that OpenAPI doesn't really aim to do.&lt;/p&gt;
+
+&lt;p&gt;Over the last year I've been &lt;a href="https://philsturgeon.uk/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/"&gt;chasing the perfect workflow&lt;/a&gt;, and one of my main requirements when evaluating the common API specs was JSON Schema support. The situation overall was pretty bleak, not just in supporting JSON Schema, but a lot of tooling was just… not great.&lt;/p&gt;
+
+&lt;p&gt;Eight months after that article things are &lt;em&gt;better&lt;/em&gt;, and the design-first API specification workflow I've been dreaming of &lt;a href="https://philsturgeon.uk/api/2018/03/01/api-specification-workflow-matures/"&gt;has been maturing&lt;/a&gt; around me. to a point where I'm really happy about most stuff!&lt;/p&gt;
+
+&lt;p&gt;OpenAPI is often described as an extension of JSON Schema, but both specs have changed over time and grown independently. OpenAPI v2 was based on JSON Schema draft v4 with a long list of deviations, but OpenAPI v3 shrank that list, upping their support to draft v5 and making the list of discrepancies shorter. Despite OpenAPI v3 closing the gap, the issue of JSON Schema divergence has not been resolved fully, and with newer drafts of JSON Schema coming out, the divergence is actually getting worse over time. Currently OpenAPI is still on draft 5, and JSON Schema has released draft 8.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="A list of caveats to the JSON Schema support in OpenAPI v3.0" src="/images/article_images/2018-03-30-openapi-and-json-schema-divergence/json-schema-oai-differences.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;I've been punting this issue for a while in my articles and recommendations at work. The hope was that by the time folks at work had upgraded to v3, there might be a v3.1 out solving the situation, but that has not come to pass. Now I find myself suggesting folks find some way to convert one to the other, or try to write JSON Schema that &lt;em&gt;is&lt;/em&gt; compatible with OpenAPI.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="Carefully writing JSON Schema for your data model kiiiinda works" src="/images/article_images/2018-03-30-openapi-and-json-schema-divergence/data-model-service-model.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;The latter can be done, but eventually you'll get bit by something. At work we've been writing JSON Schema files, using them for contract testing and a bunch of other stuff, then rendering them as part of our OpenAPI Docs with ReDoc. ReDoc will let you use &lt;code&gt;type: [string, null]&lt;/code&gt;, but now we've got &lt;a href="https://github.com/wework/speccy"&gt;Speccy&lt;/a&gt; linting our packages, it's reporting that as invalid OpenAPI…&lt;/p&gt;
+
+&lt;pre class="highlight shell"&gt;&lt;code&gt;&lt;span class="gp"&gt;$ &lt;/span&gt;speccy lint docs/openapi.yml
+Specification schema is invalid.
+
+&lt;span class="c"&gt;#/paths/~1foo/post/requestBody/content/application~1json/properties/user_uuid&lt;/span&gt;
+expected Array &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="s1"&gt;'string'&lt;/span&gt;, &lt;span class="s1"&gt;'null'&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; to be a string
+    expected Array &lt;span class="o"&gt;[&lt;/span&gt; &lt;span class="s1"&gt;'string'&lt;/span&gt;, &lt;span class="s1"&gt;'null'&lt;/span&gt; &lt;span class="o"&gt;]&lt;/span&gt; to have &lt;span class="nb"&gt;type &lt;/span&gt;string
+        expected &lt;span class="s1"&gt;'object'&lt;/span&gt; to be &lt;span class="s1"&gt;'string'&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If I change that to valid OpenAPI and use &lt;code&gt;type: string&lt;/code&gt; with &lt;code&gt;nullable: true&lt;/code&gt; instead, validators like Speccy will be happy, but my JSON Schema contract tests will break as they no longer know that &lt;code&gt;null&lt;/code&gt; is an acceptable value for that field.&lt;/p&gt;
+
+&lt;p&gt;This error was the final straw for me. At work I have been recommending everyone enable Speccy on CircleCI to (amongst other things) make sure we're writing valid OpenAPI, and I am failing to write valid OpenAPI in an API I manage. I'm also a little tired of explaining this awkward difference to people who would like to use some JSON Schema-based tools.&lt;/p&gt;
+
+&lt;p&gt;After grumping at Darrel Miller (a contributor to OpenAPI) and others on the &lt;a href="https://slack.apisyouwonthate.com/"&gt;APIs You Won't Hate slack&lt;/a&gt;, some good ideas started to pop up. Darrel is going to try and draft up an extension to OpenAPI that could theoretically end up in a future version - like 3.1 or 4.0:&lt;/p&gt;
+
+&lt;pre class="highlight yaml"&gt;&lt;code&gt;&lt;span class="s"&gt;x-oas-draft-alternate-schema&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;
+ &lt;span class="s"&gt;schemaType&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt; &lt;span class="s"&gt;json-schema-07&lt;/span&gt;
+ &lt;span class="s"&gt;schemaRef&lt;/span&gt;&lt;span class="pi"&gt;:&lt;/span&gt;  &lt;span class="s"&gt;./myrealschema.json&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This would allow support for various JSON Schema drafts, and any other data model you can think of; including protobuf. The decisions of which data model formats to support would be in the hands of tool vendors. Of course this would increase work for these vendors, and decrease portability for a while as you can only use tools that support your alternate schea, but ultimately solve a &lt;em&gt;lot&lt;/em&gt; of problems.&lt;/p&gt;
+
+&lt;p&gt;There's some stuff to flesh out, and obvious limitations around which schemas can $ref which other schemas, but there is definitely a solution here. It'll take some time to get it done, and in that time we all need a solution.&lt;/p&gt;
+
+&lt;p&gt;One approach would be trying to use OpenAPI for all the things, write validators and RSpec tools that do this, but we'd have to be 100% OpenAPI for everything, and we'd never get to play with client validation, Hyper-Schema, etc.&lt;/p&gt;
+
+&lt;p&gt;Another approach would be converting our OpenAPI models to JSON Schema, but that seems a bit lossy. OpenAPI v3 is based on JSON Schema draft v5, and at time of writing JSON Schema is up to draft v8… This also adds a build step that gets in the way. If you are using JSON Schema for your contract testing, with something like &lt;a href="https://github.com/thoughtbot/json_matchers"&gt;thoughtbot/json_matchers&lt;/a&gt;, you would need to edit your OpenAPI model, run the conversion, then run the tests. Or crowbar a conversion into your test suite, meaning the tool handling the conversion needs to be written in that specific language… or pipe a shell command to the CLI… AGH RUN AWAY.&lt;/p&gt;
+
+&lt;p&gt;No, I think making JSON Schema (latest possible draft) the one and only source of truth for the data model, then "downgrading" to a flavour of JSON Schema that OpenAPI likes, is going to be the way to go.&lt;/p&gt;
+
+&lt;p&gt;To do this, a suite of JavaScript tools are going to be created.&lt;/p&gt;
+
+&lt;h3 id="json-schema-to-openapi"&gt;json-schema-to-openapi&lt;/h3&gt;
+
+&lt;p&gt;Basically I'm going to flip &lt;a href="https://github.com/mikunn/openapi-schema-to-json-schema"&gt;openapi-to-json-schema&lt;/a&gt; around.&lt;/p&gt;
+
+&lt;p&gt;A simple CLI package that will take a JSON Schema draft 4 file, and make it perfectly OpenAPI friendly, stripping out any keywords that would cause harm.&lt;/p&gt;
+
+&lt;h3 id="json-schema-migrator"&gt;json-schema-migrator&lt;/h3&gt;
+
+&lt;p&gt;Henry Andrews (author of JSON Schema) is going to release this package, to convert files from any draft version to any other by stepping up and down. This will be really handy for all sorts of things, the most obvious use being upgrading schema files when new drafts come out.&lt;/p&gt;
+
+&lt;p&gt;This package will be used by json-schema-to-openapi to accept input in any JSON Schema draft version, and migrate it to v5 before converting to OpenAPI.&lt;/p&gt;
+
+&lt;h3 id="speccy-to-the-rescue"&gt;Speccy to the rescue&lt;/h3&gt;
+
+&lt;p&gt;Right now Speccy has a few commans: lint, serve, resolve.&lt;/p&gt;
+
+&lt;p&gt;Lint checks the files are valid, serve creates a HTTP server and renders your docs with ReDoc, and resolve pulls in all the $ref's to create one mega-file. All of these commands could support a &lt;code&gt;-j / --json-schema&lt;/code&gt; switch, which would send all &lt;code&gt;.json&lt;/code&gt; files off to json-schema-to-openapi.&lt;/p&gt;
+
+&lt;p&gt;Conversion this way should avoid the need for a build step. Changing the JSON Schema data model files mean anything you're using JSON Schema for (contract testing for example) are already happy.&lt;/p&gt;
+
+&lt;p&gt;Stuff you're doing locally with OpenAPI is usually checking the docs after editing the files, or linting things to see if your changes are ok. Both of these workflows will continue to work once Speccy is passing things through the convertor at run time, and if you &lt;em&gt;do&lt;/em&gt; need pure OpenAPI you can use resolve to create a plain OpenAPI file. 😁&lt;/p&gt;
+
+&lt;p&gt;So, with the problem well and truly understood and explained, let's get to work on fixing it! Darrel, Henry, and myself, will all be hard at work: just for you!&lt;/p&gt;
+
+&lt;p&gt;Get in touch on &lt;a href="https://slack.apisyouwonthate.com/"&gt;APIs You Won't Hate Slack&lt;/a&gt; if you're interested. We have #openapi, #json-schema and a bunch of other channels.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Part Two:&lt;/strong&gt; &lt;a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/"&gt;Problem Solved!&lt;/a&gt;&lt;/p&gt;
+
+</content>
+  </entry>
+  <entry>
+    <title>Design-first API Specification Workflow Matures</title>
+    <link rel="alternate" href="https://philsturgeon.uk/api/2018/03/01/api-specification-workflow-matures/"/>
+    <id>https://philsturgeon.uk/api/2018/03/01/api-specification-workflow-matures/</id>
+    <published>2018-03-01T02:47:00-05:00</published>
+    <updated>2018-03-04T23:26:33-05:00</updated>
+    <summary type="html">Back in October I wrote Chasing the Perfect API Specification Workflow, which was a huge article about the state of the API specification world. One person trying to figure out a good workflow, in a sea of alternative specifications, with incomplete tooling, making it hard to see a solution for all the partial bits of functionality.</summary>
+    <content type="html">&lt;p&gt;Back in October I wrote &lt;em&gt;&lt;a href="https://philsturgeon.uk/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/"&gt;Chasing the Perfect API Specification Workflow&lt;/a&gt;&lt;/em&gt;, which was a huge article about the state of the API specification world. One person trying to figure out a good workflow, in a sea of alternative specifications, with incomplete tooling, making it hard to see a solution for all the partial bits of functionality.&lt;/p&gt;
+
+&lt;p&gt;RAML and API Blueprint fell short of my requirements very quickly, and OpenAPI v3 was not available at the time of writing.&lt;/p&gt;
+
+&lt;p&gt;The initial requirements:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;API Design / Prototyping&lt;/li&gt;
+  &lt;li&gt;One source of truth where developers need to update stuff&lt;/li&gt;
+  &lt;li&gt;Beautiful documentation for humans built without any effort&lt;/li&gt;
+  &lt;li&gt;Validate payloads before you send em on the client side&lt;/li&gt;
+  &lt;li&gt;RSpec matchers providing contract testing API responses&lt;/li&gt;
+  &lt;li&gt;Documentation testing to confirm docs arent lies&lt;/li&gt;
+  &lt;li&gt;SDK Generators with customisable templates&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;OpenAPI v2.0 scored a 71% for those requirements, and the drastically improved (but frustratingly out of reach) OpenAPI v3.0 scored 86%. Tooling seemed very slow to move to OpenAPI v3, and &lt;a href="https://philsturgeon.uk/api/2017/08/26/one-month-since-openapi-v3-0/"&gt;a month after v3.0 was launched&lt;/a&gt;, pretty much nothing supported it.&lt;/p&gt;
+
+&lt;p&gt;JSON Schema divergence was huge, and with v2 missing oneOf, allOf, etc. it was difficult to write good specs for APIs with more "dynamic" contracts. At work we battled through the best we could, building as much documentation with OpenAPI v2 as possible. We actually did fairly well, but it was a stack of hacks and vendor extensions. It was painful to teach and depressing to use, but now, thankfully, we're on OpenAPI v3.0!!&lt;/p&gt;
+
+&lt;h2 id="openapi-v30"&gt;OpenAPI v3.0&lt;/h2&gt;
+
+&lt;p&gt;Right now my main goal has been &lt;a href="https://blog.apisyouwonthate.com/turning-contracts-into-beautiful-documentation-deac7013af18"&gt;generating human-readable documentation&lt;/a&gt; at the day job. With new employees starting every day, we need people to know how our many many many APIs work. Documentation is not the most interesting thing about API specifications by any means, but it's currently the most relevant at my job.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://github.com/Rebilly/ReDoc"&gt;ReDoc&lt;/a&gt; was our documentation generator of choice, and it only supported v2.0 for a while. When the &lt;a href="https://github.com/Rebilly/ReDoc/releases"&gt;ReDoc 2.0.0 alpha builds&lt;/a&gt; started popping up supporting OpenAPI v3.0 we jumped on them, and helped discover a whole bunch of bugs. ReDoc author &lt;a href="https://twitter.com/RomanHotsiy"&gt;Roman Hotsiy&lt;/a&gt; was an absolute champion, fixing bugs and cutting alpha builds on a regular basis.&lt;/p&gt;
+
+&lt;p&gt;Thanks to ReDoc's use of &lt;a href="https://github.com/Mermade/swagger2openapi/"&gt;swagger2openapi&lt;/a&gt; as a compatibility layer, OpenAPI v2/v3 are both supported. Our bevy of quirky API specs helped swagger2openapi author &lt;a href="https://twitter.com/PermittedSoc"&gt;Mike Ralphson&lt;/a&gt; to isolate a bunch of bugs, and really test out the amazing new resolver logic in &lt;a href="https://github.com/Mermade/swagger2openapi/releases"&gt;v2.12.0&lt;/a&gt; betas. We have a build step that converts our OpenAPI v2 specs to v3 using 2.12.0-5, as ReDoc is still using 2.11.x and that's not quite so good at handling giant/self-referential schemas.&lt;/p&gt;
+
+&lt;p&gt;Certainly I'm not recommending you go screaming into using an alpha and a beta, but we are using these a whole bunch and have no more problems to report. If you want OpenAPI v3.0, give them a try.&lt;/p&gt;
+
+&lt;h2 id="improving-specifications"&gt;Improving Specifications&lt;/h2&gt;
+
+&lt;p&gt;A few months ago I came up with a medal system, to help give people an idea of where their docs/specs are at, and to give readers of the docs an idea of how much they could trust the docs.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;🏅 Gold - Guaranteed accurate against code, thanks to the use of Dredd or JSON Schema Matchers, which means the API build will fail if the specification is lying&lt;/li&gt;
+  &lt;li&gt;🥈 Silver - Not guaranteed to be entirely accurate, but confidence levels are high. There may be minor discrepancies.&lt;/li&gt;
+  &lt;li&gt;🥉 Bronze - Hey look, at least there's something… 😅&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Most things started off at bronze, as we just jammed some outdated Postman Collection through the &lt;a href="https://apimatic.io/transformer"&gt;APImatic Transformer&lt;/a&gt; and were left with glorified bookmark collections of content. These Postman Collections were missing all sorts of metadata, descriptions, explanations, so the transformer generated rather lacking content, and this gave them a bronze.&lt;/p&gt;
+
+&lt;p&gt;Of course this ruffled a few feathers. Bronze was seen as a bit of a face slap, but that is pretty much the point. "These docs are not good, but they could be if you…" The fact that people cared at all was fantastic, and it meant that people actually put quite a lot of time into getting to Silver. To do that, we crowd-sourced a style guide, sharing tips, advice, recommending file structures, etc.&lt;/p&gt;
+
+&lt;p&gt;We found also that being honest about the quality of a specific APIs docs improved trust for other docs. If a user looked at some crap docs, they might just think that "docs are no more use than Postman", which is entirely inaccurate and has been a problem in the past. Marking poor docs as poor, and good docs as good, means everyone knows what to expect.&lt;/p&gt;
+
+&lt;p&gt;A lot of the work from our style guide resulted in &lt;a href="https://github.com/wework/speccy"&gt;Speccy&lt;/a&gt;, an open-source OpenAPI v3.x linter for making specs be good, not just valid.&lt;/p&gt;
+
+&lt;h2 id="keeping-up-to-date"&gt;Keeping Up-to-Date&lt;/h2&gt;
+
+&lt;p&gt;Getting folks onto Gold is the next mission. &lt;a href="https://blog.apisyouwonthate.com/keeping-documentation-honest-d9ab5351ddd4"&gt;Keeping Documentation Honest&lt;/a&gt; outlines a few approaches to doing this.&lt;/p&gt;
+
+&lt;p&gt;Short version…&lt;/p&gt;
+
+&lt;h3 id="dredd"&gt;Dredd&lt;/h3&gt;
+
+&lt;p&gt;The tool &lt;a href="https://github.com/apiaryio/dredd"&gt;Dredd&lt;/a&gt; was initially designed for API Blueprint, added support for OpenAPI a while back. It's written in JavaScript and can be seen as a completely different test suite to your usual PHPUnit/RSpec/whatever. You need to set up data in seeds at the start, and be aware that tests keep state so order is very important. Run it with &lt;code&gt;--sorted&lt;/code&gt; to limit the damage  there.&lt;/p&gt;
+
+&lt;h3 id="json-matchers"&gt;JSON Matchers&lt;/h3&gt;
+
+&lt;p&gt;Writing JSON Schema files instead of OpenAPI for your schema objects brings a lot of value, like being able to skip Dredd and confirm your responses using JSON Schema.&lt;/p&gt;
+
+&lt;p&gt;Ruby folks can use &lt;a href="https://github.com/thoughtbot/json_matchers"&gt;thoughtbot/json_matchers&lt;/a&gt;, and PHP users can make a simple helper method for their test suite by wrapping &lt;a href="http://json-guard.thephpleague.com/"&gt;JSON Guard&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The only downside here is having to convert a lot of files from YAML to JSON, but that can be done quickly in a lot of ways. Try &lt;a href="https://atom.io/packages/atom-yamljson"&gt;atom-yamljson&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id="to-be-confirmed"&gt;To Be Confirmed&lt;/h3&gt;
+
+&lt;p&gt;A whacky alternative approach is code generation, which in some languages could quite likely be done at runtime, or artifacts could be compiled earlier. Either way, by referencing the OpenAPI file in your controller, or in a middleware, your actual production code, you could validate request bodies, query string parameters, etc, all based off of the contract itself!&lt;/p&gt;
+
+&lt;p&gt;Why write up all that Rails/PHP/whatever code if you can have your existing contract do it for you? Imagine not having to write the same validation rules in multiple places then also write tests to make sure they're the same.&lt;/p&gt;
+
+&lt;p&gt;This approach needs more validation. I know it's going to work, but I've not had the time to test anything, or get anything into production. Rails users can try it out with this prototype gem &lt;a href="https://github.com/amcaplan/swagger_shield/"&gt;SwaggerShield&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id="postman-mirroring"&gt;Postman Mirroring&lt;/h2&gt;
+
+&lt;p&gt;We have some hardcore Postman users, who manually provide examples for every response, write all their tests to ensure contracts are up-to-date, write descriptions for all their parameters in the postman collection, and have the collection reading from their GitHub repo. It's impressive how dedicated they are to maintaining this, but 90% of people do not put in the work, and the Postman Collections are outdated and missing metadata.&lt;/p&gt;
+
+&lt;p&gt;For those who chose to Postman First, we use &lt;a href="https://apimatic.io/transformer"&gt;APImatic Transformer&lt;/a&gt; to import Postman, and output OpenAPI v3.0 for our documentation hub to use. For everyone else we do the opposite! We have CircleCI build a job hourly that clones down all the repos, plucks out the OpenAPI specs, and fires it off at the Postman Pro API to update the View-only Postman Collections shared with the whole team!&lt;/p&gt;
+
+&lt;p&gt;This gives people the ability to play with their API in Postman, without ever needing to worry about maintaining anything.&lt;/p&gt;
+
+&lt;p&gt;It also means we can very easily support Paw, or whatever other HTTP client comes out with support for shared collections. It's nice to not be tied to a specific vendor. :)&lt;/p&gt;
+
+&lt;h2 id="next-steps"&gt;Next Steps&lt;/h2&gt;
+
+&lt;p&gt;As always there is more to be done.&lt;/p&gt;
+
+&lt;h3 id="api-gateway-support"&gt;API Gateway Support&lt;/h3&gt;
+
+&lt;p&gt;Server-side validation might not be entirely realistic for everyone, especially due to all the various frameworks that would need adapters built. So for now I'm talking to Kong about getting OpenAPI or JSON Schema support, where we can reference specs for specific requests to skip even bothering the application server.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="Sequence flow diagram showing API gateway validation skipping the application server" src="/images/article_images/2018-03-01-api-specification-workflow-matures/api-gateway-json-schema.png" /&gt;&lt;/p&gt;
+
+&lt;p&gt;Solving this at a higher level is appealing as it avoids the need to write 15 different framework plugins in 9 different languages, but that makes confirming the request validation in integration tests a little harder. We might need to move to API monitoring tests instead for that, but… I digress.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://tyk.io/"&gt;Tyk&lt;/a&gt; has &lt;a href="https://github.com/TykTechnologies/tyk/pull/1343"&gt;just merged JSON Schema Draft v4 support&lt;/a&gt;, but it's a little tricky to imagine JSON Schema alone (not even HyperSchema) being easy to hook up, all the URLs, HTTP methods, paths, etc. are in the OpenAPI layer. It might be a bit of a manual effort instead of saying "Here's an entire OpenAPI file, you figure it out!"&lt;/p&gt;
+
+&lt;p&gt;Either way, I quite like the idea of not even bothering the application server until we're relatively confident the payload is valid. Of course you'll still have to hit it for certain validation requests (is this email unique) but you can absolutely skip "that value is not an email address".&lt;/p&gt;
+
+&lt;h3 id="editors"&gt;Editors&lt;/h3&gt;
+
+&lt;p&gt;There are &lt;a href="http://openapi.tools/#editors"&gt;multiple editors&lt;/a&gt; out there, some with GUI options and some are more like Eclipse distributions with a few plugins for OAI syntax… I need to find one to recommend to my coworkers, as a way to get folks building out OpenAPI specs without having to learn it all and mess around by hand.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="http://stoplight.io/"&gt;Stoplight.io&lt;/a&gt; have a &lt;a href="http://stoplight.io/platform/design/"&gt;beautiful API editor&lt;/a&gt;, which eventually I think is going to have local clients for OS X, Linux, etc. but right now is web only. This might be the winner, if folks an click around a super easy API Editor, build out good DRY OpenAPI specifications, have changes committed along with their PRs, etc. then we're pretty much sorted there.&lt;/p&gt;
+
+&lt;p&gt;If not I'll try to hook up &lt;code&gt;$ speccy edit&lt;/code&gt; to launch one of the Node editors, and run that on a local server. So far none of them seem to support editing files in place, or multiple files. It's all import then export the product, which isn't really achieving the workflow I want.&lt;/p&gt;
+
+&lt;h3 id="speccy"&gt;Speccy&lt;/h3&gt;
+
+&lt;p&gt;We really need a &lt;code&gt;speccy init&lt;/code&gt; which will create a simple file structure, asking a few questions, and essentially making a hello world. Getting folks a basic file to play around with will be a lot more useful than asking them to start from scratch.&lt;/p&gt;
+
+&lt;p&gt;Speccy also really &lt;a href="https://github.com/wework/speccy/issues/14"&gt;needs a config file&lt;/a&gt;, and somebody is threatening to &lt;a href="https://twitter.com/DanHerd/status/968221934591889413"&gt;make a VS Code plugin&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id="client-side-validation"&gt;Client-side validation&lt;/h3&gt;
+
+&lt;p&gt;Not got around to getting anything into production, because… well 👆 &amp;amp; 👇, but I am currently seeking volunteers at work. I did whoever write up a whole &lt;a href="https://blog.apisyouwonthate.com/the-many-amazing-uses-of-json-schema-client-side-validation-c78a11fbde45"&gt;guide on using JSON Schema for client-side validation&lt;/a&gt; using JavaScript, so let me know how it goes if you try it out.&lt;/p&gt;
+
+&lt;h3 id="sdk-generation"&gt;SDK Generation&lt;/h3&gt;
+
+&lt;p&gt;I really need to dig in to the options here, and find "the best" tool for the job. There are a lot of platforms like Stoplight, Apigee, SwaggerHub, etc. that try to do all the things, and they all do a different "some" of the things. I don't want to be forced into any one of them tbh, but if we can use a single service without duplicating efforts and functionality too much then I'd be happy to use them.&lt;/p&gt;
+
+&lt;p&gt;A CLI tool which we can write templates for would be ideal, which… &lt;a href="https://github.com/swagger-api/swagger-codegen"&gt;Swagger CodeGen&lt;/a&gt; caaaaan do, but the output seems a bit funky. More work to be done, update on this next braindump.&lt;/p&gt;
+
+&lt;h3 id="openapi-and-json-schema-convergence"&gt;OpenAPI and JSON Schema Convergence&lt;/h3&gt;
+
+&lt;p&gt;As mentioned OpenAPI and JSON Schema are not entirely compatible, and this leads to most of the trouble right now. Sometimes you want OpenAPI, sometimes you want JSON Schema, and between the two you can do 100% of the things I want.&lt;/p&gt;
+
+&lt;p&gt;Sadly OpenAPI v3.0 still supports it's own mildly different version of JSON Schema, which is roughly JSON Schema Draft v5, but it's a sub-set super-set. Some things are missing, some things are different, and some keywords exist for OpenAPI schema objects that have no meaning to JSON Schema validators…&lt;/p&gt;
+
+&lt;p&gt;This situation is a known problem for JSON Schema and OAI maintainers. I've been on a few calls with both teams discussing how to solve it, and so far it seems like adding "Alternative Syntax" is the way to go. OpenAPI could keep its own schema objects (JSON Schema-ish-kinda) and a new keyword is added to signify a &lt;code&gt;$ref&lt;/code&gt;'ed file is JSON Schema Draft v8 proper (no messin).&lt;/p&gt;
+
+&lt;p&gt;For now you're stuck either trying to write a file thats valid for both systems (just hope you don't need &lt;code&gt;type: ['string', 'null']&lt;/code&gt;), or converting from &lt;a href="https://github.com/mikunn/openapi-schema-to-json-schema"&gt;one to the other&lt;/a&gt; to get the best of both… This needs to change.&lt;/p&gt;
+
+&lt;h2 id="summary"&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;I'm getting pretty close to having a workflow I'm completely happy with for spec-first API design and development. As always walking the line between idealism and realism, suggesting one thing to folks to do for now, whilst trying to improve things for our future selves to transition to when the time is right.&lt;/p&gt;
+
+&lt;p&gt;Having folks now writing OpenAPI v3.0 by hand is tough, but at least we're not on a myriad of vendor hacks shoved into some weird OpenAPI v2.0 with some v3.0 shimmed in nonsense… Postman Mirroring has got a few folks excited, and of those who are excited they're really being helped out with speccy.&lt;/p&gt;
+
+&lt;p&gt;Finding a kick-ass editor to recommend will be ridiculously important in getting other people on board, and if we can get a few of those gold medal APIs to expose their JSON Schema objects for folks to client-side validate… getting folks to pour effort into specs should no longer be such an uphill battle.&lt;/p&gt;
+
+&lt;p&gt;Then we just need to get better at keeping out docs up to date, with either API Gateway implementations or server-side validation with tools like SwaggerShield ensuring the incoming stuff is correct, and contract testing responses in the application.&lt;/p&gt;
+
+&lt;p&gt;Making progress ey?&lt;/p&gt;
+
+&lt;p&gt;All of this stuff is being blogged and booked about over at &lt;a href="https://apisyouwonthate.com"&gt;APIs You Won't Hate&lt;/a&gt; as I go, so pre-order a copy of the partially written &lt;a href="https://apisyouwonthate.com/books/surviving-other-peoples-apis.html"&gt;Surviving Other People's APIs&lt;/a&gt; to get more in depth reading material.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>Still Going on REST is the new SOAP</title>
+    <link rel="alternate" href="https://philsturgeon.uk/api/2018/01/20/rest-confusion-explained-further/"/>
+    <id>https://philsturgeon.uk/api/2018/01/20/rest-confusion-explained-further/</id>
+    <published>2018-01-20T17:38:00-05:00</published>
+    <updated>2018-01-20T18:58:21-05:00</updated>
+    <summary type="html">The misunderstandings on REST continue, and I'm happy to explain them all up!</summary>
+    <content type="html">&lt;p&gt;One month after &lt;a href="https://philsturgeon.uk/api/2017/12/18/rest-confusion-explained/"&gt;A Response to REST is the new SOAP&lt;/a&gt; and I'm still having a productive dialog with the author, helping him understand how REST works. I thought it might interest some of you too.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Pakal de Bonchamp&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Thanks for the lengthy article - we unexpectedly agree on many things. I'll try to summarize my thoughts about this (and the tons of comments on social media) in a complementary post, but I just take the opportunity to clarify some dubious (but minor) points here&lt;/p&gt;
+
+&lt;p&gt;About the payload of DELETE requests, I have to disagree with your analysis. Rfc2616 is now obsoleted, but it did, indirectly, imply what I said. See discussions here:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request"&gt;https://stackoverflow.com/questions/299628/is-an-entity-body-allowed-for-an-http-delete-request&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Although the spec does not forbid DELETE requests from having a message-body, section 4.3 seems to indicate that the body should be ignored by servers since there are no "defined semantics" for DELETE entity-bodies:
+"A server SHOULD read and forward a message-body on any request; if the request method does not include defined semantics for an entity-body, then the message-body SHOULD be ignored when handling the request."
+&lt;em&gt;shelley Jan 9 '13 at 23:49&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Same thing for PATCH semantics: the requirement of a "set of operations" was somehow canceled by the recent JSON Merge Patch RFC7386 , but for a long time "everybody was doing it wrong" nevertheless, and you can still find dozens of rants, from dedicated REST advocates, about this point. See &lt;a href="http://williamdurand.fr/2014/02/14/please-do-not-patch-like-an-idiot/"&gt;http://williamdurand.fr/2014/02/14/please-do-not-patch-like-an-idiot/&lt;/a&gt;
+By the way, RFC7386 states that it suits APIs which "do not make use of explicit null values", that is to say, NONE I've ever crossed. I'm appalled.&lt;/p&gt;
+
+&lt;p&gt;If anything, these two details show that RESTfulness can be a moving, fuzzy, treacherous jungle for the unwary developer.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Me&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;For DELETE, I would suggest that using folks interpretations of it from StackOverflow is what got us into a lot of mess with HTTP and REST in general. I too was confused after reading incorrect assumptions on StackOverflow, and I have had to correct myself many times. 2616 was replaced because some stuff was unclear, and now that we have clarifications there should be no more confusion.&lt;/p&gt;
+
+&lt;p&gt;I wrote that &lt;a href="https://blog.apisyouwonthate.com/put-vs-patch-vs-json-patch-208b3bfda7ac"&gt;PUT / PATCH / JSON-PATCH article&lt;/a&gt; as a response to William Durand, and we spoke about it since. If memory servers me right (Correct me Will!) he said he was a bit overly heated about that article, and accepted my interpretation, that a "set of operations" can easily be a "fields to update", which was the interpretation that was codified in JSON Merge Patch.&lt;/p&gt;
+
+&lt;p&gt;Overall, folks were a bit wobbly interpreting HTTP through old RFCs like 2616, which has now been clarified in new expanded RFCs. As such, we can use HTTP/1.1 and many of the amazing new RFCs like API Problems, Merge Patch, etc, to build any sort of API.&lt;/p&gt;
+
+&lt;p&gt;None of that (confusion about HTTP, DELETE, PATCH, or any other RFCs) has a single solitary thing to do with REST, which is still a fantastic concept if you can understand that it's offering far far FAR more than RPC. Sometimes you don't can benefit greatly from REST, sometimes RPC is just the ticket, but confusing the two then blaming REST for the confusion is not going to help anything. :)&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Pakal&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Please, is there any other source of information than this 46 minutes audio-only podcast, to explain Hateoas? I understand nothing to this endless talk http://apibusters.com/003-w… (I'm not an English native), and web articles I've crossed always remain in the "theory" to avoid facing real life problems.&lt;/p&gt;
+
+&lt;p&gt;I've tried exploring the FoxyCart API instead, but it makes little sense to me.&lt;/p&gt;
+
+&lt;p&gt;For example : https://api.foxycart.com/rels/store&lt;/p&gt;
+
+&lt;p&gt;How is the APi client supposed to recognize "store" objects returned ? They are by default application/hal+json, how can such resources be understood by a "decoupled client"?
+How does the machine know what a "fx:item_categories" affordance is?
+Since integrator has to read tons of out-of-band information to understand which Resource field can be used for what, and hardcode it in the client program, what is the gain compared to non-REST APIs?&lt;/p&gt;
+
+&lt;p&gt;I've had a good laugh with the page "https://api.foxycart.com/re…" btw.
+"Property helpers are links to various helpers for determining default values for resource properties along with other helpful API information. [..] Properties: This result varies per helper and may change over time. Please see the API browser for more details."
+Isn't that a way of telling API consumers "we do what we want, just adapt to our changes when they happen"!?&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Me Again!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Thanks for coming back for another chat Pakal. I've been meaning to get transcripts on the podcast, and I will absolutely do that. Audio only is no good for many people.&lt;/p&gt;
+
+&lt;p&gt;If you would like an article explaining why HATEOAS is useful and show how it works, take a look at &lt;a href="https://blog.apisyouwonthate.com/representing-state-in-rest-and-graphql-9194b291d127"&gt;Representing State in REST and GraphQL&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The cusp is that instead of firing data fields up and down and forcing each and every client to figure out the state, and attempt to work out the next available actions, you instead "normalize" the state up into the API.&lt;/p&gt;
+
+&lt;p&gt;I explain that concept more on &lt;a href="https://blog.apisyouwonthate.com/understanding-rpc-rest-and-graphql-2f959aadebe7"&gt;Understanding RPC, REST &amp;amp; GraphQL&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Specifically where I pretend RPC and REST are assistants at a doctors office:&lt;/p&gt;
+
+&lt;p&gt;Client: Hi, I would like to speak to Dr Watson, is he there?
+RPC: No. &lt;em&gt;click&lt;/em&gt;
+&lt;em&gt;Calls back&lt;/em&gt;
+Client: I checked his calendar, and it looks like he is off for the day. I would like to visit another doctor, and it looks like Dr Jones is available at 3pm, can I see her then?
+RPC: Yes.&lt;/p&gt;
+
+&lt;p&gt;The burden of knowing what to do is entirely on the client. It needs to know all the data, come to the appropriate conclusion itself, then has to figure out what to do next. REST however presents you with the next available options.&lt;/p&gt;
+
+&lt;p&gt;Client: Hi, I would like to speak to Dr Watson, is he there?&lt;/p&gt;
+
+&lt;p&gt;REST: Doctor Watson is not currently in the office, he’ll be back tomorrow, but you have a few options. If it’s not urgent you could leave a message and I’ll get it to him tomorrow, or I can book you with another doctor, would you like to hear who is available today?&lt;/p&gt;
+
+&lt;p&gt;Client: Yes, please let me know who is there!&lt;/p&gt;
+
+&lt;p&gt;REST: Doctors Smith and Jones, here are links to their profiles.&lt;/p&gt;
+
+&lt;p&gt;Client: Ok, Doctor Jones looks like my sort of Doctor, I would like to see them, let’s make that appointment.
+REST: Appointment created, here’s a link to the appointment details.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How is the APi client supposed to recognize "store" objects returned ?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Instead of teaching your client that the URL /store has meaning, you teach it that the link relation "store" has meaning. It's not drastically different. Clients for hypermedia APIs are no more magically able to understand rel = store than they are able to guess a URL.&lt;/p&gt;
+
+&lt;p&gt;It's not really about knowing the URL, it's about seeing a link there. If the link is available, the action (or affordance) is relevant to that resource in that state.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;They are by default application/hal+json, how can such resources be
+understood by a "decoupled client"?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Any client code that inspects this mime type will know that this is JSON. It's actually a special mime type that explains it's more than just JSON, its &lt;a href="http://stateless.co/hal_specification.html"&gt;HAL&lt;/a&gt;, which is a hypermedia format built in JSON.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How does the machine know what a "fx:item_categories" affordance is?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;How does the machine know what a &lt;code&gt;GET /items_categories&lt;/code&gt; is? You tell it. You just train the machine to follow the link instead of remember the link and attack it directly.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Since integrator has to read tons of out-of-band information to understand
+which Resource field can be used for what, and hardcode it in the client
+program, what is the gain compared to non-REST APIs?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Great question! One benefit people often say about REST is "you don't need documentation". I think that is partially true, but there will always need to be a certain amount of documentation about what resources are, possible workflows, business rules, etc. That is more user documentation than API Documentation, which certainly becomes less important. You no longer need to share a list of URLs for clients to remember or descriptions for what they do, because your documentation explains the workflows and the clients just follow the breadcrumbs.&lt;/p&gt;
+
+&lt;p&gt;The doctors office explains how REST can make the documentation far less necessary, as RPC makes you figure out &lt;em&gt;everything&lt;/em&gt;, and REST provides you with breadcrumbs.&lt;/p&gt;
+
+&lt;p&gt;Both systems make you figure out what what specific fields are, and what they do. REST does not help you with specific field meanings, but neither does RPC as a general concept.&lt;/p&gt;
+
+&lt;p&gt;The paradigms do not provide metadata, but certain concrete implementations do.&lt;/p&gt;
+
+&lt;p&gt;SOAP had XML Schema, gRPC has Protobuff, and GraphQL has "GraphQL Types".&lt;/p&gt;
+
+&lt;p&gt;REST has no opinion on the topic, so you have potentially infinite options at your disposal. You can use Protobuff, JSON Schema, JSON-LD, Cap'n'proto, something else, all of them, or none at all. Content-Type and Accept allow you to mix and match at your pleasure.&lt;/p&gt;
+
+&lt;p&gt;More on that here: &lt;a href="https://blog.apisyouwonthate.com/why-do-people-dislike-json-a7d67c8d38c1"&gt;Why Do People Dislike JSON?&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This metadata is usually considered in-band, as the schema data is discoverable, often by a head or a link in the payload.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;I've had a good laugh with the page "https://api.foxycart.com/re…" btw.
+"Property
+helpers are links to various helpers for determining default values for
+resource properties along with other helpful API information. [..]
+Properties: This result varies per helper and may change over time.
+Please see the API browser for more details."
+Isn't that a way of telling API consumers "we do what we want, just adapt to our changes when they happen"!?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I think you may have misread this. They are saying that the actual HTML returned by each specific helper is different to other helpers, so the best way to take a look is to jump into the API browser, instead of them copying and pasting it all into documentation. I think that is fair enough.&lt;/p&gt;
+
+&lt;p&gt;I would be very happy to answer any more questions you have, and help you understand HATEOAS as a concept. It's misunderstood by most people, who then ignore it, and call REST pointless because it's basically "slightly different RPC with different URLs". Without HATEOAS, REST is pretty much just that. This is why we need to help people understand HATEOAS instead of moaning about it.&lt;/p&gt;
+
+&lt;p&gt;Those articles should do a good job of explaining it all. In the mean time, I'm going to get transcripts up on the API Busters podcast. :)&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;We'll see how it goes from here. Seems like progress is being made, and it's giving me plenty of tips on questions to answer in the next book: &lt;a href="https://leanpub.com/talking-to-other-peoples-web-apis/"&gt;Talking to Other People's APIs&lt;/a&gt;.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>A Response to REST is the new SOAP</title>
+    <link rel="alternate" href="https://philsturgeon.uk/api/2017/12/18/rest-confusion-explained/"/>
+    <id>https://philsturgeon.uk/api/2017/12/18/rest-confusion-explained/</id>
+    <published>2017-12-18T13:32:00-05:00</published>
+    <updated>2018-01-19T11:50:14-05:00</updated>
+    <summary type="html">This article outlines a list of common misunderstandings about REST, so I thought it would be a nice opportunity to set the record straight on a bunch of them. The article is really just 100% misunderstandings, so lets learn some stuff!</summary>
+    <content type="html">&lt;p&gt;Enough people have asked me about the article &lt;em&gt;&lt;a href="https://medium.com/@pakaldebonchamp/rest-is-the-new-soap-97ff6c09896d"&gt;REST is the new SOAP&lt;/a&gt;&lt;/em&gt; that I felt it justifies a write up. Before I get started, I want to be clear that I hold no grudge against the author, and if any frustration leaks out in my writing I'd like to apologize in advance.&lt;/p&gt;
+
+&lt;p&gt;The entire article is full of common misunderstandings about REST and HTTP. Despite dedicating my career to trying to educate people through these confusions, they continue to be rife. Clearly I am not being loud enough, writing effectively enough, or doing a good enough job. That is the frustration you might hear in my writing, but nothing is aimed at the author.&lt;/p&gt;
+
+&lt;p&gt;Let's get going.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Now we were able to robustly connect to any such API, with just a few lines of code.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;That's a fairly different goal from what REST sets out to achieve: stability of API and clients, and longevity lasting decades. Triggering an action on a different server is not the main goal.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;RPC was dead, the future was RESTful: resources living each on its own URL, and manipulated exclusively through HTTP protocol.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This should not have been true, RPC is still valid and I use it regularly for servers that have no reason to be REST, like action-based microservices, or anything similar to the &lt;a href="https://api.slack.com/web"&gt;Slack Web API&lt;/a&gt; (which is proudly and quite rightly RPC).&lt;/p&gt;
+
+&lt;p&gt;Bandwagon jumping is a problem, and we see this with new technologies, all the time. I wrote &lt;a href="https://philsturgeon.uk/2014/05/07/the-tale-of-tom-dick-and-harry/"&gt;A Tale of Tom, Dick and Harry&lt;/a&gt;, where the three characters advocate tech, and some of them do it recklessly. A lot of REST advocates in the past have played the role of Dick in that story, but remember to separate issues with REST itself, from those with the people pushing it willy nilly onto everything.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;From then on, every API we had to expose or consume became a new challenge; not to say a testimony to insanity.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;New things can seem complex, taking time to learn. That does not make them a poor idea.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;No more standards, no more precise specifications. Just a vague “RESTful philosophy”, prone to endless metaphysical debates, and as many ugly workarounds.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;You could follow the &lt;a href="http://jsonapi.org/"&gt;JSON-API&lt;/a&gt; standard, or the &lt;a href="http://www.odata.org/"&gt;OData&lt;/a&gt; standard. They're REST after all.&lt;/p&gt;
+
+&lt;p&gt;When the author writes RPC, they said they follow XML-RPC or JSON-RPC, so why ignore the standards out there for REST, then blame REST?&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How do you map the precise functions above, to a handful of CRUD operations?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I wrote a &lt;a href="https://www.smashingmagazine.com/2016/09/understanding-rest-and-rpc-for-http-apis/"&gt;article for Smashing Magazine&lt;/a&gt; explaining this which seems relevant.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Is sending the activation reminder email an update on a “must_send_activation_reminder_email” attribute? Or the creation of a “activation_reminder_email resource”?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;A simple &lt;code&gt;POST /activation_reminders&lt;/code&gt; would certainly suffice. "email" is an implementation detail that might change over time, as the user might have requested you send push notifications, text messages, etc, and that setting lives on the server. RPC-minded people focus too heavily on the action their client is trying to achieve, not on the domain model they're trying to effect.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Is it sensible to use DELETE for cancelSubscription() if the subscription remains alive during a grace period, and may be resurrected during that time?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Deleting means removing the record, so if you delete it it is gone. Change the status of the subscription with &lt;code&gt;PATCH /subscriptions/123&lt;/code&gt; and &lt;code&gt;{ "status": "cancelled" }&lt;/code&gt;, and this seems a little less confusing.&lt;/p&gt;
+
+&lt;p&gt;Alternatively if capturing more information is required, &lt;code&gt;POST /subscription/123/cancellations&lt;/code&gt; and consider creating a &lt;code&gt;SubscriptionCancel&lt;/code&gt; representation to avoid the confusion of having an RPCish endpoint with arbitrary fields floating around requiring documentation.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How do you split the data tree of getAccountDetails() between endpoints, to respect the data model of REST?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This question is vague so I'm not sure what it means, but you can create new resources that reference the 'account_id' in interest and have that endpoint figure it out. That what the server is for. 👍🏼&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;What URL endpoint do you assign to each of your “resources”? Yeah it’s easy, but it has to be done anyway.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Whatever the resource is called is the name of the URL.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Chocolate -&amp;gt; /chocolates&lt;/li&gt;
+  &lt;li&gt;Payment Attempts -&amp;gt; /payment_attempts&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How do you express the diversity of error conditions, using the very limited bunch of HTTP codes?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Now you are confusing HTTP and REST, which is common but not correct. HTTP is a transportation layer, and as such you are expected to use the HTTP status codes to portray the category of error as far as HTTP is concerned, then application specific issues become a job for your application. I wrote an &lt;a href="https://philsturgeon.uk/http/2015/09/23/http-status-codes-are-not-enough/"&gt;article about this&lt;/a&gt; too.&lt;/p&gt;
+
+&lt;p&gt;tl;dr: is that HTTP error codes are like an exception. Just like getting a 400 is not enough, neither is getting an &lt;code&gt;ArgumentError&lt;/code&gt; or any other exception name. You then need to get code if you're a computer, or get message if you're a human, and use that metadata to establish the specifics.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;What serialization formats, which specific dialects do you use for input and output payloads?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Most folks use JSON but yeah you can use literally whatever you like. Choice is not a failure.&lt;/p&gt;
+
+&lt;p&gt;Want to use &lt;a href="https://developers.google.com/protocol-buffers/"&gt;Protobuff&lt;/a&gt;? &lt;a href="http://bsonspec.org/"&gt;BSON&lt;/a&gt;? Sendgrid offered &lt;code&gt;lolcat&lt;/code&gt; for a while. Doesn't matter.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How exactly do you scatter these simple signatures between HTTP method, URL, query string, payload, headers, and status code?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Query strings are for querying items, payload is for data you're sending, status code is a category of the response (success or fail)&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;And you’re gone for hours, reinventing the wheel. Not even a tailored, smart wheel. A broken and fragile wheel, requiring tons of documentation to be understood, and violating specifications without even knowing it.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ok this is frustrating. REST APIs are often mocked because the proponents explain that you should not need documentation. A REST API absolutely should not need documentation, but I have spent the last few months working on generating documentation for our APIs, because  they are all RPC APIs.&lt;/p&gt;
+
+&lt;p&gt;When an API &lt;a href="https://blog.apisyouwonthate.com/representing-state-in-rest-and-graphql-9194b291d127"&gt;represents its own state&lt;/a&gt;, uses &lt;a href="http://www.ustream.tv/recorded/102891495?utm_content=buffer4016f&amp;amp;utm_medium=social&amp;amp;utm_source=twitter.com&amp;amp;utm_campaign=buffer"&gt;hypermedia to declare its affordances&lt;/a&gt;, and &lt;a href="https://blog.apisyouwonthate.com/guessing-api-contracts-ac1b7eaebced"&gt;provides a contract&lt;/a&gt;, you can &lt;em&gt;chose&lt;/em&gt; to generate human readable documentation, but that's only going there for people treating the REST API like a RPC API…&lt;/p&gt;
+
+&lt;p&gt;A REST API quite definitively requires less documentation, unless you've just built an unspecified RPC which is pretending to be REST, like so many people do.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Yet minutes later they will rejoice that HTTP verbs have well defined semantics to create (POST), retrieve (GET), update (PUT/PATCH) and delete (DELETE) resources.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;If the point is to be minimalist, at least let it be done right. Do you know why PUT, PATCH, and DELETE have never been implemented in web browser forms? Because they are useless and harmful. We can just use GET for read and POST for write. Or POST exclusively, when HTTP-level caching is unwanted. Other verbs will at best get in your way, at worst ruin your day.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This is an assertion without much merit in my opinion. GET is absolutely dangerous if you use it for the inappropriate thing.&lt;/p&gt;
+
+&lt;p&gt;&lt;img alt="" src="/images/article_images/2017-12-18-rest-confusion-explained/get-aint-secure.png" /&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;You want to use PUT to update your resource? OK, but some Holy Specifications state that the data input has to be a “complete resource”, i.e follow the same schema as the corresponding GET output. So what do you do with the numerous read-only parameters returned by GET (creation time, last update time, server-generated token…)? You omit them and violate the PUT principles?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This sounds like a frustration born from not understanding the purpose of PUT. It is designed to avoid conflicts as you mention, and as I explain in my article &lt;a href="https://philsturgeon.uk/api/2016/05/03/put-vs-patch-vs-json-patch/"&gt;PUT vs PATCH vs JSON-PATCH&lt;/a&gt;, here is a scenario where using PUT will lead to reverting data.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;1.) Initial state&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;GET /foos/123
+
+{
+  "field1": false,
+  "field2": false
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;2.) Request A updates &lt;code&gt;field1&lt;/code&gt; to be true&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;PUT /foos/123
+
+{
+  "field1": true,
+  "field2": false
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;3.) Request B updates field2 to be true&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;PUT /foos/123
+
+{
+  "field1": false,
+  "field2": true
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If both fields start &lt;code&gt;false&lt;/code&gt;, and each request only intends to update one field, little do they know they are clobbering the results and essentially reverting them each time. Instead of ending up with both values being true, you'll simply have whatever the last request was, which is going to be "field1": false and "field2": true.&lt;/p&gt;
+
+&lt;p&gt;PUT is great for things like &lt;a href="https://philsturgeon.uk/api/2016/01/04/http-rest-api-file-uploads/"&gt;file uploads&lt;/a&gt; for a users avatar for example, you can reattempt multiple times (on timeout or failure), and you'll not have to worry about having two images (like you would if you had &lt;code&gt;POST uploadImage(userId)&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;So, if you want idempotent actions, then yes you want PUT, and you absolutely need to provide the entire body. If you want to update just a bit, use PATCH.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;You want to use PATCH to update your resource? Nice, but like 99% of people using this verb, you’ll just send a subset of resource fields in your request payload, hoping that the server properly understands the operation intended (and all its possible side effects); lots of resource parameters are deeply linked or mutually exclusive(ex. it’s either credit card OR paypal token, in a user’s billing info), but RESTful design hides this important information too. Anyway, you’d violate specs once more: PATCH is not supposed to send a bunch of fields to be overridden. Instead, you’re supposed to provide a “set of instructions” to be applied on the resources.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This is another conflation unfortunately, also explained in the &lt;a href="https://blog.apisyouwonthate.com/put-vs-patch-vs-json-patch-208b3bfda7ac"&gt;PUT vs PATCH vs JSON-PATCH&lt;/a&gt; article.&lt;/p&gt;
+
+&lt;p&gt;Yes, there is a standard called &lt;a href="https://tools.ietf.org/html/rfc6902"&gt;RFC 6902: JSON-PATCH&lt;/a&gt;, but this has nothing to do with REST, nothing to do with HTTP, and is merely an optional standard you can chose to use. It is 100% overkill if all you are trying to do is update a simple resource, but it can do amazingly useful things, like atomic increment/decrement, which you'd need to create a whole new resource for otherwise.&lt;/p&gt;
+
+&lt;p&gt;From your description, you want to just use PATCH and send just the fields you want. That's fine, I do that, it works, it's valid, REST is happy, and if you want to be certain of that there is a standard called &lt;a href="https://tools.ietf.org/html/rfc7386"&gt;JSON Merge Patch&lt;/a&gt;, which simplifies things for the authors exact use case.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;You want to DELETE resources? OK, but I hope you don’t need to provide substantial context data; like a PDF scan of the termination request from the user. DELETE prohibits having a payload. A constraint that REST architects often dismiss, since most webservers don’t enforce this rule on the requests they receive.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This is absolutely completely false. Neither &lt;a href="https://tools.ietf.org/html/rfc7231"&gt;RFC 7231: Hypertext Transfer Protocol: Semantics and Content&lt;/a&gt;, nor &lt;a href="https://tools.ietf.org/html/rfc2616"&gt;now-obsolete RFC 2616&lt;/a&gt; ever said this, or even hinted at it.&lt;/p&gt;
+
+&lt;p&gt;RFC 7231 did add a warning that some HTTP servers and implementations will reject this, but that is a polite heads up from the HTTP crowd about something various server projects have got wrong over the years, not a failure of REST in any way…&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;4.3.5.  DELETE
+
+   A payload within a DELETE request message has no defined semantics;
+   sending a payload body on a DELETE request might cause some existing
+   implementations to reject the request.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Read the whole thing &lt;a href="https://tools.ietf.org/html/rfc7231#section-4.3.5"&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;REST aficionados easily profess that “people are doing it wrong” and their APIs are “actually not RESTful”. For exemple, lots of developers use PUT to create a resource directly on its final URL (/myresourcebase/myresourceid), whereas the “good way” of doing it is to POST on a parent URL (/myresourcebase), and let the server indicate, with an HTTP “Location” header, the new resource’s URL&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I'm sorry anyone ever corrected the author on this, as create is perfectly RESTful. Either approach here is perfectly valid, and creating with a PUT is totally fine if you know the URL. The author got some bad advice here.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Using “HTTP 404 Not Found” to notify about an unexisting resource sounds RESTful as heck, doesn’t it? Too bad: your nginx was misconfigured for 1 hour, so your API consumers got only 404 errors and purged hundreds of accounts, thinking they were deleted….&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I've definitely been bit by Fastly caching 404s when I wasn't expecting it. 404's were being cached 60s, which seemed weird when we tried getting an item which was not created "yet" and appeared uncreated for a while. This is actually a feature. A point we'll get to more later is: If you're operating at high traffic, you want to be using HTTP caching. Some important data request on the homepage of a website getting thousands of hits a section should be cached, and if that item is suddenly removed then your server would absolutely crap itself searching for all those items.&lt;/p&gt;
+
+&lt;p&gt;The item not being created yet honestly should have been a 201, alerting the client it might take a while, and lets it know to retry later. We then lowered the 404 cache timeout to 15s, meaning the client after 15s saw the resource. Problem solved.&lt;/p&gt;
+
+&lt;p&gt;It's a sane default for a HTTP cache, but not everyone is expecting it all the time when it comes to an API.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Using “HTTP 401 Unauthorized” when a user doesn’t have access credentials to a third-party service sounds acceptable, doesn’t it? However, if an ajax call in your Safari browser gets this error code, it might startle your end customer with a very unexpected password prompt [it did, years ago, YMMV].&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Old browsers did funny things, and they don't now… ¯\_(ツ)_/¯&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Some standard HTTP error codes are specific to Webdav, others to Microsoft, and the few remaining have definitions so fuzzy that they are of no help. In the end, like most REST users, you’ll probably use random HTTP codes, like “HTTP 418 I’m a teapot” or unassigned numbers, to express your application-specific exceptions. Or you’ll shamelessly return “HTTP 400 Bad Request” for all functional errors, and then invent your own clunky error format, with booleans, integer codes, slugs, and translated messages stuffed into an arbitrary payload. Or you’ll give up altogether on proper error handling; you’ll just return a plain message, in natural language, and hope that the caller will be a human able to analyze the problem, and take action. Good luck interacting with such APIs from an autonomous program.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I sense the frustration here, clearly some terrible things have happened. Nobody actually uses 418, that's a joke so lets move on.&lt;/p&gt;
+
+&lt;p&gt;The "shamelessly return “HTTP 400 Bad Request” for all functional errors" specific bit… well define "functional error"? There is absolutely a weird religious battle that wages over 400 for 422 for validation style things, with 422 being a WebDAV error and 400 being meant to syntax errors (thing missing quotes in JSON or unclosed pair in XML). Honestly it's pretty standard to just use 400 for any validation errors, and theres plenty of valid 4xx codes for many situations.&lt;/p&gt;
+
+&lt;p&gt;It seems a little funny the author keeps complaining about lack of standards, and complaining about having to do things that standards do for you. No HTTP API developer needs to create their own error format, they just need to use the standards that exist.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href="https://tools.ietf.org/html/rfc7807"&gt;RFC 7807: Problem Details for HTTP APIs&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href="http://jsonapi.org/format/#errors"&gt;JSON-API Errors&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This is one of the first things I recommend to folks when consulting, as it avoids the natural language processing pains this author has clearly suffered.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;REST has made a career out of boasting about concepts that any service architect in his right mind already respects, or about principles that it doesn’t even follow. Here are some excerpts, grabbed from top-ranked webpages.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;em&gt;REST is a client-server architecture. The client and the server both have a different set of concerns.&lt;/em&gt; What a scoop in the software world.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This is a bit of a misquote of &lt;a href="https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm"&gt;Roy Fieldings REST dissertation&lt;/a&gt;:&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;5.1.2 Client-Server
+
+The first constraints added to our hybrid style are those of the client-server architectural style (Figure 5-2), described in Section 3.4.1. Separation of concerns is the principle behind the client-server constraints. By separating the user interface concerns from the data storage concerns, we improve the portability of the user interface across multiple platforms and improve scalability by simplifying the server components. Perhaps most significant to the Web, however, is that the separation allows the components to evolve independently, thus supporting the Internet-scale requirement of multiple organizational domains.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Nobody said this was a brand new, idea, but it's absolutely something that needed to be said as at the time RPC folks often did not consider this to be something worth worrying about. I'd rather be pleased that a good idea I was aware of was incorporated into REST, than complain about that good idea not be new to &lt;em&gt;me&lt;/em&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;REST provides a uniform interface between components. Well, like any other protocol does, when it’s enforced as the franca lingua of a whole ecosystem of services.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Another misquote of Roy Fielding, who originally wrote:&lt;/p&gt;
+
+&lt;pre class="highlight plaintext"&gt;&lt;code&gt;5.1.5 Uniform Interface
+
+The central feature that distinguishes the REST architectural style from other network-based styles is its emphasis on a uniform interface between components (Figure 5-6). By applying the software engineering principle of generality to the component interface, the overall system architecture is simplified and the visibility of interactions is improved. Implementations are decoupled from the services they provide, which encourages independent evolvability. The trade-off, though, is that a uniform interface degrades efficiency, since information is transferred in a standardized form rather than one which is specific to an application's needs. The REST interface is designed to be efficient for large-grain hypermedia data transfer, optimizing for the common case of the Web, but resulting in an interface that is not optimal for other forms of architectural interaction.
+
+In order to obtain a uniform interface, multiple architectural constraints are needed to guide the behavior of components. REST is defined by four interface constraints: identification of resources; manipulation of resources through representations; self-descriptive messages; and, hypermedia as the engine of application state. These constraints will be discussed in Section 5.2.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The "Uniform Interface" criteria means not inventing your own conventions inside the protocols being used like RPC and GraphQL do for example.&lt;/p&gt;
+
+&lt;p&gt;HTTP verbs, headers, all the things the author scoffed at, are the uniform interfaced being used appropriately. When REST is implemented inside HTTP, all HTTP tools can be used, and network caching, debugging, monitoring for errors, etc can be used perfectly.&lt;/p&gt;
+
+&lt;p&gt;For example, tools like Runscope Traffic or NewRelic will not know that an error happened if you rely on &lt;code&gt;{ success: false }&lt;/code&gt; or some other home-made convention.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Rest is awesome, because it is STATELESS. Yes there is probably a huge database behind the webservice, but it doesn’t remember the state of the client. Or, well, yes, actually it remember its authentication session, its access permissions… but it’s stateless, nonetheless. Or more precisely, just as stateless as any HTTP-based protocol, like simple RPC mentioned previously.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Oh dear, are you maintaining sessions internally despite using a RESTish interface? I've had to hit login and logout on various sides of making requests, and the server was fairly unstable under load. Failure to log out would then cause more issues as the servers sessions were all taken. Other servers will maintain the session for &lt;em&gt;that server&lt;/em&gt;, which obviously falls apart as soon as a load balancer is in place.&lt;/p&gt;
+
+&lt;p&gt;This is a mess, and if each request was simply accepting some sort of token and validating on each request it would not matter which server is hit, and no logouts are ever necessary.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;With REST, you can leverage the power of HTTP CACHING! Well here is at last one concluding point: a GET request and its cache-control headers are indeed friendly with web caches. That being said, aren’t local caches (Memcached etc.) enough for 99% of web services? Out-of-control caches are dangerous beasts; how many people want to expose their APIs in clear text, so that a Varnish or a Proxy on the road may keep delivering outdated content, long after a resource has been updated or deleted? Maybe even delivering it “forever”, if a configuration mistake once occurred? A system must be secure by default. I perfectly admit that some heavily loaded systems want to benefit from HTTP caching, but it costs much less to expose a few GET endpoints for heavy read-only interactions, than to switch all operations to REST and its dubious error handling.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;You can leverage the power of HTTP caching with any HTTP API, but something REST recommends is that resources are meant to explicitly define their cacheability:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;REST enables intermediate processing by constraining messages to be self-descriptive: interaction is stateless between requests, standard methods and media types are used to indicate semantics and exchange information, and responses explicitly indicate cacheability. - Roy Fielding&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Specifically, I want to focus on this:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;That being said, aren’t local caches (Memcached etc.) enough for 99% of web services?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Memcache caching data and utilizing HTTP caching only appear somewhat equivalent if you are &lt;em&gt;caching based on time alone&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;If we're only discussing based on time alone (5 seconds, 10 minutes, 24 hours, etc), then yeah the two appear similar, but there's one rather key difference: who is defining that time?&lt;/p&gt;
+
+&lt;p&gt;If Service A is being called by Client X, locally caching the response on Client X with memcache/redis/etc will work perfectly fine, but Client X is responsible for deciding how long that cache should last. Maybe there was some communication between times at the time of implementation, where "3 hours" was decided, and Client X uses 3 hours.&lt;/p&gt;
+
+&lt;p&gt;Well… what if Service A realizes that 2 hours would be more appropriate due to improving their data processing and making data update more quickly? Or what 6 hours to improve performance? If those teams are still in close communication, they can try to get that changed, and so long as the email doesnt get lost or the ticket doesn't vanish into a JIRA backlog, those teams will eventually get their caching back on point.&lt;/p&gt;
+
+&lt;p&gt;If there is also Client Y and Cient Z showing this data, they're going to have disparate data for the entire duration of the development cycle required to get them all updated.&lt;/p&gt;
+
+&lt;p&gt;This is much much more complex if Client X, Y and Z all work at different companies, speak different languages, or for any one of hundreds of other reasons.&lt;/p&gt;
+
+&lt;p&gt;HTTP Caching via &lt;code&gt;Cache-Control&lt;/code&gt; or &lt;code&gt;Expires&lt;/code&gt; centralizes the expiry time on the server, meaning clients all over the world will respect the decisions made by the server so long as they're coded to follow the HTTP response, instead of hardcoding stuff. Lots of middlewares support this, like the Ruby gem &lt;a href="https://github.com/lostisland/faraday/"&gt;Faraday&lt;/a&gt; middleware &lt;a href="https://github.com/plataformatec/faraday-http-cache"&gt;Faraday HTTP Client&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;It of course still uses memcache/redis/etc to cache the response, it just handles the "how long" for you. I've explained all of this in an article on &lt;a href="https://blog.apisyouwonthate.com/speeding-up-apis-apps-smart-toasters-with-http-response-caching-a67becf829c6"&gt;HTTP response caching&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Even just this difference makes HTTP caching seem more valuable, but wait, there's more!&lt;/p&gt;
+
+&lt;p&gt;The author unfortunately entirely ignores the concept of &lt;a href="https://robots.thoughtbot.com/introduction-to-conditional-http-caching-with-rails"&gt;HTTP conditional caching&lt;/a&gt;, which is fantastic.&lt;/p&gt;
+
+&lt;p&gt;For example, if I implement traditional expiry based caching alone, I have this thing for X hours; let's say 8. In that time, things could have changed, and if I want to know about changes I need to subscribe to AMQP messages or some real-time API to provide invalidations. This might be possible to make, but its a whole lot of extra architecture to solve a problem that the HTTP specification has solved for you.&lt;/p&gt;
+
+&lt;p&gt;With conditional caching I can make a lower expiry, say 1 hour. It'll pass along the ETag and essentially ask the server: "Only generate a bunch of JSON and shove it over the pipe &lt;strong&gt;if&lt;/strong&gt; it is different from what I already have". If it's the same, the server gives you a nice little 304, the server doesn't have to do as much work, no waiting for a lump of JSON, no parsing it locally, and you can be happy knowing you're still not serving the right data.&lt;/p&gt;
+
+&lt;p&gt;If the data has changed, you'll get the up to date data, and everyone is happy.&lt;/p&gt;
+
+&lt;p&gt;On many systems I've seen, the response time for a 304 is half that of the 200, depending obviously on how overloaded your responses are.&lt;/p&gt;
+
+&lt;p&gt;As a third benefit, HTTP Caching allows systems to say "I don't care about your cache, in this instance I 100% want the freshest thing and performance be damned", which is not something you can do without building non-standard ways of doing it. That's that Uniform Interface thing again.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Thanks to all this, REST has HIGH PERFORMANCE! Are we sure of that? Any API designer knows it: locally, we want fine-grained APIs, to be able to do whatever we want; and remotely, we want coarse-grained APIs, to limit the impact of network round-trips. Here is again a domain in which REST fails miserably. The split of data between “resources”, each instance on its own endpoint, naturally leads to the N+1 Query problem. To get a user’s full data (account, subscriptions, billing information…), you have to issue as many HTTP requests; and you can’t parallelize them, since you don’t know in advance the unique IDs of related resources. This, plus the inability to fetch only part of resource objects, naturally creates nasty bottlenecks.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Well, the author here completely ignores sparse fieldsets (specifying the fields to return) and compound documents (including related items in the response), which absolutely solve the problem the author is describing. It's weird the author never noticed these techniques, as they've been popularized for years in REST APIs, and are now a fundamental part of GraphQL.&lt;/p&gt;
+
+&lt;p&gt;Despite this problem being solved, many REST advocates are advocating for a slightly more more modern approach of creating &lt;a href="https://blog.apisyouwonthate.com/lets-stop-building-apis-around-a-network-hack-9a68f7e83dd2"&gt;smaller more targeted resources, and utilizing HTTP/2&lt;/a&gt;. This reduces the importance of the HTTP network bottleneck, and of course &lt;a href="https://tools.ietf.org/html/draft-ietf-httpbis-early-hints-05"&gt;Early Hints&lt;/a&gt; and &lt;a href="https://http2.github.io/faq/#whats-the-benefit-of-server-push"&gt;Server Push&lt;/a&gt; can start pushing requested responses into the pipe removing the "missing IDs" issue the author describes.&lt;/p&gt;
+
+&lt;p&gt;Basically this paragraph is wrong on two counts.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The described problem has already been sufficiently solved in various popular standards&lt;/li&gt;
+  &lt;li&gt;The described problem is also solved even more efficiently in HTTP/2&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;REST offers better compatibility. How so? Why do so many REST webservices have “/v2/” or “/v3/” in their base URLs then? Backwards and forward compatible APIs are not hard to achieve, with high level languages, as long as simple rules are followed when adding/deprecating parameters. As far as I know, REST doesn’t bring anything new on the subject.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Global versioning and the like are the result of RPC-minded folks (like the author) designing APIs and ignoring the concept of &lt;a href="https://blog.apisyouwonthate.com/api-versioning-has-no-right-way-f3c75457c0b7"&gt;API Evolution&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Using JSON Schema etc can make this a lot easier. Something the RPC author may have picked up from the SOAP days using WSDL, very similar concepts.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;REST is so easy, it can be queried from any shell, with CURL! OK, actually, every HTTP-based protocol can be queried with CURL. Even SOAP. Issuing a GET is particularly straightforward, for sure, but good luck writing json or xml POST payloads by hand; people usually use fixture files, or, much more handy, full-fledged API clients instantiated directly in the command line interface of their favorite language.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Agree, writing JSON or XML on the command line sounds terrible, which is why everyone uses Postman or similar. I've not seen anyone advocating using CURL for RESTful interactions since 2010 somewhere, and I pointed out how weird that was then.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;“The client does not need any prior knowledge of the service in order to use it”. This is by far my favourite quote. I’ve found it numerous times, under different forms, especially when the buzzword HATEOAS lurked around; sometimes with some careful (but insufficient) “except” phrases following.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Well, once a developer understands HTTP and REST, you can understand any RESTful API that actually follows those constraints. Again, they're not saying "Any REST API will immediately make sense to literally anyone that just got into web development" or anything else daft, they're saying that REST APIs describe themselves. Again, &lt;a href="https://blog.apisyouwonthate.com/representing-state-in-rest-and-graphql-9194b291d127"&gt;Representing State in REST and GraphQL&lt;/a&gt; explains this (and HATEOAS).&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Still, I don’t know in which fantasy world these people live, but in this one, a client program is not a colony of ants; it doesn’t browse remote APIs randomly, and then decide how to best handle them, based on pattern recognition or black magic. Quite the opposite; the client has strong expectations on what it means, to PUT this one field to this one URL with this one value, and the server had better respect the semantic which was agreed upon during integration, else all hell might break loose.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Nobody is talking about magic. Please listen to &lt;a href="http://apibusters.com/"&gt;this podcast&lt;/a&gt;. for a full response to this confusion, as its a common one.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Each web framework has its own way of defining URL endpoint. So expect some big dependencies, or a good layer of handwritten boilerplate, to plug your existing API onto your favorite server as a set of REST endpoint.&lt;/p&gt;
+
+  &lt;p&gt;Libraries like Django-Rest-Framework automate the creation of REST APIs, by acting as data-centric wrappers above SQL/noSQL schemas. If you just want to make “CRUD over HTTP”, you could be fine with them. But if you want to expose real APIs, with workflows, constraints and such, you’ll have a hard time bending any REST framework to fit your needs.&lt;/p&gt;
+
+  &lt;p&gt;Be prepared to connect, one by one, each HTTP method of each endpoint, to the corresponding method call; with a fair share of handmade exception handling, to translate passing-through exceptions into corresponding error codes and payloads.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Wait, what? Who is just copying and pasting APIs around between codebases? Why would you do any of that?&lt;/p&gt;
+
+&lt;p&gt;That's like complaining that a hotel booking validation form can't be copied from Django to Rails, or… what? Ugh.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;How to industrialize client-side integration?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;JSON Schema. 👍🏼&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;You’ll have to craft URLs by hand, write serializers and deserializers, and learn how to workaround the ambiguities of the API. Expect quite some trial-and-error before you tame the beast.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Good lord no, that's what HATEOAS is for.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Do you know how webservices providers make up for this, and ease adoption?&lt;/p&gt;
+
+  &lt;p&gt;Simple, they write their own official client implementations.&lt;/p&gt;
+
+  &lt;p&gt;FOR. EVERY. MAJOR. LANGUAGE. AND. PLATFORM.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;You can generate those from OpenAPI/JSON Schema… but yeah creating tools that simplify integration absolutely gets more folks using your system. This is not a &lt;em&gt;requirement&lt;/em&gt; but a recommended approach to improving developer experience.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;For decades, about every programming language has functioned with the same workflow: sending inputs to a callable, and getting results or errors as output. This worked well. Quite well.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Confusing REST API URIs with callables is the whole problem, that is what RPC is.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;I don’t doubt that some smart people out there will provide cases where REST shines; they’ll showcase their homemade REST-based protocol, allowing to discover and do CRUD operation on arbitrary object trees, thanks to hyperlinks; they’ll explain how the REST design is so brilliant, that I’ve just not read enough articles and dissertations about its concepts.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Yeah respectively this is literally it. Here are loads of articles.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;I don’t care. Trees are recognized by their own fruits. What took me a few hours of coding and worked very robustly, with simple RPC, now takes weeks and can’t stop inventing new ways of failing or breaking expectations. Development has been replaced by tinkering.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Burning fossil fuels is way easier than setting up solar panels, but that doesn't make it a better idea. Overuse of RPC is ignorant and causes problems down the line, rather similarly.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The future could be bright. There are still tons of excellent protocols available, in binary or text format, with or without schema, some leveraging the new abilities of HTTP2… so let’s move on, people.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Or just use HTTP/2 for your REST API, which would solve that network bottleneck thing the author mentions, amongst many other issues.&lt;/p&gt;
+
+&lt;p&gt;I get it, REST is a complex topic. Too many people think they understand it, and are falsely validated when they bump into other people who don't understand it. Folks everywhere are building RESTish APIs which are basically just RPC + HTTP verbs + Pretty URLs, and as that doesn't seem very helpful they write giant articles explaining why that's not very useful…&lt;/p&gt;
+
+&lt;h2 id="summary"&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;The future &lt;em&gt;is&lt;/em&gt; bright, we can get there through education, usage of standards, and avoiding bandwagon hopping. As soon as we stop &lt;a href="https://blog.apisyouwonthate.com/lets-stop-building-apis-around-a-network-hack-9a68f7e83dd2"&gt;designing APIs around a network hack&lt;/a&gt;, &lt;a href="https://blog.apisyouwonthate.com/api-versioning-has-no-right-way-f3c75457c0b7"&gt;thing more intelligently about API versioning&lt;/a&gt;, and really &lt;a href="https://blog.apisyouwonthate.com/guessing-api-contracts-ac1b7eaebced"&gt;commit to contracts&lt;/a&gt;, the REST API world will be fantastically popular over the next few years.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="http://json-schema.org/latest/json-schema-hypermedia.html"&gt;JSON HyperSchema&lt;/a&gt; alone is going to solve confusion around hypermedia controls (HATEOAS), and make writing contracts via specifications far far easier.&lt;/p&gt;
+</content>
+  </entry>
+  <entry>
+    <title>One Month Since OpenAPI v3.0</title>
+    <link rel="alternate" href="https://philsturgeon.uk/api/2017/08/26/one-month-since-openapi-v3-0/"/>
+    <id>https://philsturgeon.uk/api/2017/08/26/one-month-since-openapi-v3-0/</id>
+    <published>2017-08-26T03:47:00-04:00</published>
+    <updated>2018-01-19T11:50:07-05:00</updated>
+    <summary type="html">Last month today OpenAPI v3.0 was released, and not only is there a lot of cool stuff, but it unblocks some akward situations with vendor prefixes and other lacking features. I was hoping the tooling would be hot on its tails. Progress is being made in all of the repositories I've got my eyes on, but sadly v3.0 support is not there yet.</summary>
+    <content type="html">&lt;p&gt;Last month today &lt;a href="https://www.openapis.org/blog/2017/07/26/the-oai-announces-the-openapi-specification-3-0-0"&gt;OpenAPI v3.0 was released&lt;/a&gt;, and not only is there &lt;a href="https://blog.readme.io/an-example-filled-guide-to-swagger-3-2/"&gt;a lot of cool stuff&lt;/a&gt;, but it unblocks some akward situations with vendor prefixes and other lacking features. I was hoping the tooling would be hot on its tails. Progress is being made in all of the repositories I've got my eyes on, but sadly v3.0 support is not there yet.&lt;/p&gt;
+
+&lt;h2 id="marketing"&gt;Marketing&lt;/h2&gt;
+
+&lt;p&gt;Even though the whole OpenAPI community advises against calling the specification "Swagger", the specification is only available on &lt;a href="https://swagger.io/specification/"&gt;Swagger.io&lt;/a&gt;, or linked from &lt;a href="http://openapis.org"&gt;OpenAPIs.org&lt;/a&gt; with a &lt;a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md"&gt;direct link to GitHub&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The messaging here is confusing. Is it OpenAPI or Swagger? If it's not Swagger why is the specification still on that site? Ending up on GitHub feels like I accidentally clicked the wrong thing, and 3.0 might be unfinished, but it's meant to be out!&lt;/p&gt;
+
+&lt;p&gt;Whilst OpenAPI is obviously for technically minded people, these are still concerns that will put newcomers off, and I hope they're addressed.&lt;/p&gt;
+
+&lt;h2 id="tooling"&gt;Tooling&lt;/h2&gt;
+
+&lt;p&gt;The &lt;a href="/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/"&gt;workflow I outlined&lt;/a&gt; back in July relies on a few tools.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://apimatic.io/transformer"&gt;APImatic Transformer&lt;/a&gt; to convert Postman or (whatever other source files people have kicking around) to OpenAPI, so that the workflow can begin. This is still v3.0-rc1.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://github.com/swagger-api/swagger-node"&gt;swagger-node&lt;/a&gt; is awesome for designing and building well specified APIs in Node. It skips the need for things like Dredd as the framework itself is ensuring the code conforms to the specification, instead of building specifications from code like some other junky tools. Still v2.0, but &lt;a href="https://github.com/swagger-api/swagger-node/issues/514"&gt;subscribe for updates&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://rebilly.github.io/ReDoc"&gt;ReDoc&lt;/a&gt; is a UI for the OpenAPI schema, creating HTML for humans to look at. It's undergoing some architectural changes which will hopefully ease rejiggering under the hood, but v3.0 aint done just yet. &lt;a href="https://github.com/Rebilly/ReDoc/issues/312"&gt;Subscribe for updates&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://github.com/luckymarmot/API-Flow/"&gt;API Flow&lt;/a&gt; will allow mirroring to Postman from our API Specifications. Unlike the earlier mentioned one-off Postman import, used to create OpenAPI Specifications from ragtag examples, this would be an ongoing Read-only mirror. Sadly, this too does not support v3.0. &lt;a href="https://github.com/luckymarmot/API-Flow/issues/102"&gt;Subscribe for updates&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id="summary"&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;We're still actively creating OpenAPI v2.0 content at work, knowing that we can &lt;a href="https://blog.runscope.com/posts/tutorial-upgrading-swagger-2-api-definition-to-openapi-3"&gt;manually upgrade&lt;/a&gt; later.&lt;/p&gt;
+
+&lt;p&gt;When most of these tools support v3.0 we can upgrade APIs one at a time. This will be a little confusing, but hopefully it will simplify the specification files enough that folks be happy.&lt;/p&gt;
+
+&lt;p&gt;Fingers crossed the OpenAPI community can keep on cranking, and I'll obviously send whatever pull requests I can to help.&lt;/p&gt;
+</content>
+  </entry>
+</feed>

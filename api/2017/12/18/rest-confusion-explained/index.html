@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>A Response to REST is the new SOAP | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="A Response to REST is the new SOAP" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="This article outlines a list of common misunderstandings about REST, so I thought it would be a nice opportunity to set the record straight on a bunch of them. The article is really just 100% misunderstandings, so lets learn some stuff!" />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2017/12/18/rest-confusion-explained/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="A Response to REST is the new SOAP | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2017/12/18/rest-confusion-explained/">
+  <meta name="twitter:description" content="This article outlines a list of common misunderstandings about REST, so I thought it would be a nice opportunity to set the record straight on a bunch of them. The article is really just 100% misunderstandings, so lets learn some stuff!">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">A Response to REST is the new SOAP</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2017-12-18 18:32:00 UTC">
+                Dec 18 2017
+              </time>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/rest/">#rest</a>
+              <a href="/tag/rpc/">#rpc</a>
+              <a href="/tag/soap/">#soap</a>
+              <a href="/tag/http2/">#http2</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <hr>
+
+          <p>Enough people have asked me about the article <em><a href="https://medium.com/@pakaldebonchamp/rest-is-the-new-soap-97ff6c09896d">REST is the new SOAP</a></em> that I felt it justifies a write up. Before I get started, I want to be clear that I hold no grudge against the author, and if any frustration leaks out in my writing I'd like to apologize in advance.</p>
+
+<p>The entire article is full of common misunderstandings about REST and HTTP. Despite dedicating my career to trying to educate people through these confusions, they continue to be rife. Clearly I am not being loud enough, writing effectively enough, or doing a good enough job. That is the frustration you might hear in my writing, but nothing is aimed at the author.</p>
+
+<p>Let's get going.</p>
+
+<blockquote>
+  <p>Now we were able to robustly connect to any such API, with just a few lines of code.</p>
+</blockquote>
+
+<p>That's a fairly different goal from what REST sets out to achieve: stability of API and clients, and longevity lasting decades. Triggering an action on a different server is not the main goal.</p>
+
+<blockquote>
+  <p>RPC was dead, the future was RESTful: resources living each on its own URL, and manipulated exclusively through HTTP protocol.</p>
+</blockquote>
+
+<p>This should not have been true, RPC is still valid and I use it regularly for servers that have no reason to be REST, like action-based microservices, or anything similar to the <a href="https://api.slack.com/web">Slack Web API</a> (which is proudly and quite rightly RPC).</p>
+
+<p>Bandwagon jumping is a problem, and we see this with new technologies, all the time. I wrote <a href="https://philsturgeon.uk/2014/05/07/the-tale-of-tom-dick-and-harry/">A Tale of Tom, Dick and Harry</a>, where the three characters advocate tech, and some of them do it recklessly. A lot of REST advocates in the past have played the role of Dick in that story, but remember to separate issues with REST itself, from those with the people pushing it willy nilly onto everything.</p>
+
+<blockquote>
+  <p>From then on, every API we had to expose or consume became a new challenge; not to say a testimony to insanity.</p>
+</blockquote>
+
+<p>New things can seem complex, taking time to learn. That does not make them a poor idea.</p>
+
+<blockquote>
+  <p>No more standards, no more precise specifications. Just a vague “RESTful philosophy”, prone to endless metaphysical debates, and as many ugly workarounds.</p>
+</blockquote>
+
+<p>You could follow the <a href="http://jsonapi.org/">JSON-API</a> standard, or the <a href="http://www.odata.org/">OData</a> standard. They're REST after all.</p>
+
+<p>When the author writes RPC, they said they follow XML-RPC or JSON-RPC, so why ignore the standards out there for REST, then blame REST?</p>
+
+<blockquote>
+  <p>How do you map the precise functions above, to a handful of CRUD operations?</p>
+</blockquote>
+
+<p>I wrote a <a href="https://www.smashingmagazine.com/2016/09/understanding-rest-and-rpc-for-http-apis/">article for Smashing Magazine</a> explaining this which seems relevant.</p>
+
+<blockquote>
+  <p>Is sending the activation reminder email an update on a “must_send_activation_reminder_email” attribute? Or the creation of a “activation_reminder_email resource”?</p>
+</blockquote>
+
+<p>A simple <code>POST /activation_reminders</code> would certainly suffice. "email" is an implementation detail that might change over time, as the user might have requested you send push notifications, text messages, etc, and that setting lives on the server. RPC-minded people focus too heavily on the action their client is trying to achieve, not on the domain model they're trying to effect.</p>
+
+<blockquote>
+  <p>Is it sensible to use DELETE for cancelSubscription() if the subscription remains alive during a grace period, and may be resurrected during that time?</p>
+</blockquote>
+
+<p>Deleting means removing the record, so if you delete it it is gone. Change the status of the subscription with <code>PATCH /subscriptions/123</code> and <code>{ "status": "cancelled" }</code>, and this seems a little less confusing.</p>
+
+<p>Alternatively if capturing more information is required, <code>POST /subscription/123/cancellations</code> and consider creating a <code>SubscriptionCancel</code> representation to avoid the confusion of having an RPCish endpoint with arbitrary fields floating around requiring documentation.</p>
+
+<blockquote>
+  <p>How do you split the data tree of getAccountDetails() between endpoints, to respect the data model of REST?</p>
+</blockquote>
+
+<p>This question is vague so I'm not sure what it means, but you can create new resources that reference the 'account_id' in interest and have that endpoint figure it out. That what the server is for. 👍🏼</p>
+
+<blockquote>
+  <p>What URL endpoint do you assign to each of your “resources”? Yeah it’s easy, but it has to be done anyway.</p>
+</blockquote>
+
+<p>Whatever the resource is called is the name of the URL.</p>
+
+<ul>
+  <li>Chocolate -&gt; /chocolates</li>
+  <li>Payment Attempts -&gt; /payment_attempts</li>
+</ul>
+
+<blockquote>
+  <p>How do you express the diversity of error conditions, using the very limited bunch of HTTP codes?</p>
+</blockquote>
+
+<p>Now you are confusing HTTP and REST, which is common but not correct. HTTP is a transportation layer, and as such you are expected to use the HTTP status codes to portray the category of error as far as HTTP is concerned, then application specific issues become a job for your application. I wrote an <a href="https://philsturgeon.uk/http/2015/09/23/http-status-codes-are-not-enough/">article about this</a> too.</p>
+
+<p>tl;dr: is that HTTP error codes are like an exception. Just like getting a 400 is not enough, neither is getting an <code>ArgumentError</code> or any other exception name. You then need to get code if you're a computer, or get message if you're a human, and use that metadata to establish the specifics.</p>
+
+<blockquote>
+  <p>What serialization formats, which specific dialects do you use for input and output payloads?</p>
+</blockquote>
+
+<p>Most folks use JSON but yeah you can use literally whatever you like. Choice is not a failure.</p>
+
+<p>Want to use <a href="https://developers.google.com/protocol-buffers/">Protobuff</a>? <a href="http://bsonspec.org/">BSON</a>? Sendgrid offered <code>lolcat</code> for a while. Doesn't matter.</p>
+
+<blockquote>
+  <p>How exactly do you scatter these simple signatures between HTTP method, URL, query string, payload, headers, and status code?</p>
+</blockquote>
+
+<p>Query strings are for querying items, payload is for data you're sending, status code is a category of the response (success or fail)</p>
+
+<blockquote>
+  <p>And you’re gone for hours, reinventing the wheel. Not even a tailored, smart wheel. A broken and fragile wheel, requiring tons of documentation to be understood, and violating specifications without even knowing it.</p>
+</blockquote>
+
+<p>Ok this is frustrating. REST APIs are often mocked because the proponents explain that you should not need documentation. A REST API absolutely should not need documentation, but I have spent the last few months working on generating documentation for our APIs, because  they are all RPC APIs.</p>
+
+<p>When an API <a href="https://blog.apisyouwonthate.com/representing-state-in-rest-and-graphql-9194b291d127">represents its own state</a>, uses <a href="http://www.ustream.tv/recorded/102891495?utm_content=buffer4016f&amp;utm_medium=social&amp;utm_source=twitter.com&amp;utm_campaign=buffer">hypermedia to declare its affordances</a>, and <a href="https://blog.apisyouwonthate.com/guessing-api-contracts-ac1b7eaebced">provides a contract</a>, you can <em>chose</em> to generate human readable documentation, but that's only going there for people treating the REST API like a RPC API…</p>
+
+<p>A REST API quite definitively requires less documentation, unless you've just built an unspecified RPC which is pretending to be REST, like so many people do.</p>
+
+<blockquote>
+  <p>Yet minutes later they will rejoice that HTTP verbs have well defined semantics to create (POST), retrieve (GET), update (PUT/PATCH) and delete (DELETE) resources.</p>
+</blockquote>
+
+<blockquote>
+  <p>If the point is to be minimalist, at least let it be done right. Do you know why PUT, PATCH, and DELETE have never been implemented in web browser forms? Because they are useless and harmful. We can just use GET for read and POST for write. Or POST exclusively, when HTTP-level caching is unwanted. Other verbs will at best get in your way, at worst ruin your day.</p>
+</blockquote>
+
+<p>This is an assertion without much merit in my opinion. GET is absolutely dangerous if you use it for the inappropriate thing.</p>
+
+<p><img alt="" src="/images/article_images/2017-12-18-rest-confusion-explained/get-aint-secure.png" /></p>
+
+<blockquote>
+  <p>You want to use PUT to update your resource? OK, but some Holy Specifications state that the data input has to be a “complete resource”, i.e follow the same schema as the corresponding GET output. So what do you do with the numerous read-only parameters returned by GET (creation time, last update time, server-generated token…)? You omit them and violate the PUT principles?</p>
+</blockquote>
+
+<p>This sounds like a frustration born from not understanding the purpose of PUT. It is designed to avoid conflicts as you mention, and as I explain in my article <a href="https://philsturgeon.uk/api/2016/05/03/put-vs-patch-vs-json-patch/">PUT vs PATCH vs JSON-PATCH</a>, here is a scenario where using PUT will lead to reverting data.</p>
+
+<p><strong>1.) Initial state</strong></p>
+
+<pre class="highlight plaintext"><code>GET /foos/123
+
+{
+  "field1": false,
+  "field2": false
+}
+</code></pre>
+
+<p><strong>2.) Request A updates <code>field1</code> to be true</strong></p>
+
+<pre class="highlight plaintext"><code>PUT /foos/123
+
+{
+  "field1": true,
+  "field2": false
+}
+</code></pre>
+
+<p><strong>3.) Request B updates field2 to be true</strong></p>
+
+<pre class="highlight plaintext"><code>PUT /foos/123
+
+{
+  "field1": false,
+  "field2": true
+}
+</code></pre>
+
+<p>If both fields start <code>false</code>, and each request only intends to update one field, little do they know they are clobbering the results and essentially reverting them each time. Instead of ending up with both values being true, you'll simply have whatever the last request was, which is going to be "field1": false and "field2": true.</p>
+
+<p>PUT is great for things like <a href="https://philsturgeon.uk/api/2016/01/04/http-rest-api-file-uploads/">file uploads</a> for a users avatar for example, you can reattempt multiple times (on timeout or failure), and you'll not have to worry about having two images (like you would if you had <code>POST uploadImage(userId)</code>).</p>
+
+<p>So, if you want idempotent actions, then yes you want PUT, and you absolutely need to provide the entire body. If you want to update just a bit, use PATCH.</p>
+
+<blockquote>
+  <p>You want to use PATCH to update your resource? Nice, but like 99% of people using this verb, you’ll just send a subset of resource fields in your request payload, hoping that the server properly understands the operation intended (and all its possible side effects); lots of resource parameters are deeply linked or mutually exclusive(ex. it’s either credit card OR paypal token, in a user’s billing info), but RESTful design hides this important information too. Anyway, you’d violate specs once more: PATCH is not supposed to send a bunch of fields to be overridden. Instead, you’re supposed to provide a “set of instructions” to be applied on the resources.</p>
+</blockquote>
+
+<p>This is another conflation unfortunately, also explained in the <a href="https://blog.apisyouwonthate.com/put-vs-patch-vs-json-patch-208b3bfda7ac">PUT vs PATCH vs JSON-PATCH</a> article.</p>
+
+<p>Yes, there is a standard called <a href="https://tools.ietf.org/html/rfc6902">RFC 6902: JSON-PATCH</a>, but this has nothing to do with REST, nothing to do with HTTP, and is merely an optional standard you can chose to use. It is 100% overkill if all you are trying to do is update a simple resource, but it can do amazingly useful things, like atomic increment/decrement, which you'd need to create a whole new resource for otherwise.</p>
+
+<p>From your description, you want to just use PATCH and send just the fields you want. That's fine, I do that, it works, it's valid, REST is happy, and if you want to be certain of that there is a standard called <a href="https://tools.ietf.org/html/rfc7386">JSON Merge Patch</a>, which simplifies things for the authors exact use case.</p>
+
+<blockquote>
+  <p>You want to DELETE resources? OK, but I hope you don’t need to provide substantial context data; like a PDF scan of the termination request from the user. DELETE prohibits having a payload. A constraint that REST architects often dismiss, since most webservers don’t enforce this rule on the requests they receive.</p>
+</blockquote>
+
+<p>This is absolutely completely false. Neither <a href="https://tools.ietf.org/html/rfc7231">RFC 7231: Hypertext Transfer Protocol: Semantics and Content</a>, nor <a href="https://tools.ietf.org/html/rfc2616">now-obsolete RFC 2616</a> ever said this, or even hinted at it.</p>
+
+<p>RFC 7231 did add a warning that some HTTP servers and implementations will reject this, but that is a polite heads up from the HTTP crowd about something various server projects have got wrong over the years, not a failure of REST in any way…</p>
+
+<pre class="highlight plaintext"><code>4.3.5.  DELETE
+
+   A payload within a DELETE request message has no defined semantics;
+   sending a payload body on a DELETE request might cause some existing
+   implementations to reject the request.
+</code></pre>
+
+<p>Read the whole thing <a href="https://tools.ietf.org/html/rfc7231#section-4.3.5">here</a>.</p>
+
+<blockquote>
+  <p>REST aficionados easily profess that “people are doing it wrong” and their APIs are “actually not RESTful”. For exemple, lots of developers use PUT to create a resource directly on its final URL (/myresourcebase/myresourceid), whereas the “good way” of doing it is to POST on a parent URL (/myresourcebase), and let the server indicate, with an HTTP “Location” header, the new resource’s URL</p>
+</blockquote>
+
+<p>I'm sorry anyone ever corrected the author on this, as create is perfectly RESTful. Either approach here is perfectly valid, and creating with a PUT is totally fine if you know the URL. The author got some bad advice here.</p>
+
+<blockquote>
+  <p>Using “HTTP 404 Not Found” to notify about an unexisting resource sounds RESTful as heck, doesn’t it? Too bad: your nginx was misconfigured for 1 hour, so your API consumers got only 404 errors and purged hundreds of accounts, thinking they were deleted….</p>
+</blockquote>
+
+<p>I've definitely been bit by Fastly caching 404s when I wasn't expecting it. 404's were being cached 60s, which seemed weird when we tried getting an item which was not created "yet" and appeared uncreated for a while. This is actually a feature. A point we'll get to more later is: If you're operating at high traffic, you want to be using HTTP caching. Some important data request on the homepage of a website getting thousands of hits a section should be cached, and if that item is suddenly removed then your server would absolutely crap itself searching for all those items.</p>
+
+<p>The item not being created yet honestly should have been a 201, alerting the client it might take a while, and lets it know to retry later. We then lowered the 404 cache timeout to 15s, meaning the client after 15s saw the resource. Problem solved.</p>
+
+<p>It's a sane default for a HTTP cache, but not everyone is expecting it all the time when it comes to an API.</p>
+
+<blockquote>
+  <p>Using “HTTP 401 Unauthorized” when a user doesn’t have access credentials to a third-party service sounds acceptable, doesn’t it? However, if an ajax call in your Safari browser gets this error code, it might startle your end customer with a very unexpected password prompt [it did, years ago, YMMV].</p>
+</blockquote>
+
+<p>Old browsers did funny things, and they don't now… ¯\_(ツ)_/¯</p>
+
+<blockquote>
+  <p>Some standard HTTP error codes are specific to Webdav, others to Microsoft, and the few remaining have definitions so fuzzy that they are of no help. In the end, like most REST users, you’ll probably use random HTTP codes, like “HTTP 418 I’m a teapot” or unassigned numbers, to express your application-specific exceptions. Or you’ll shamelessly return “HTTP 400 Bad Request” for all functional errors, and then invent your own clunky error format, with booleans, integer codes, slugs, and translated messages stuffed into an arbitrary payload. Or you’ll give up altogether on proper error handling; you’ll just return a plain message, in natural language, and hope that the caller will be a human able to analyze the problem, and take action. Good luck interacting with such APIs from an autonomous program.</p>
+</blockquote>
+
+<p>I sense the frustration here, clearly some terrible things have happened. Nobody actually uses 418, that's a joke so lets move on.</p>
+
+<p>The "shamelessly return “HTTP 400 Bad Request” for all functional errors" specific bit… well define "functional error"? There is absolutely a weird religious battle that wages over 400 for 422 for validation style things, with 422 being a WebDAV error and 400 being meant to syntax errors (thing missing quotes in JSON or unclosed pair in XML). Honestly it's pretty standard to just use 400 for any validation errors, and theres plenty of valid 4xx codes for many situations.</p>
+
+<p>It seems a little funny the author keeps complaining about lack of standards, and complaining about having to do things that standards do for you. No HTTP API developer needs to create their own error format, they just need to use the standards that exist.</p>
+
+<ul>
+  <li><a href="https://tools.ietf.org/html/rfc7807">RFC 7807: Problem Details for HTTP APIs</a></li>
+  <li><a href="http://jsonapi.org/format/#errors">JSON-API Errors</a></li>
+</ul>
+
+<p>This is one of the first things I recommend to folks when consulting, as it avoids the natural language processing pains this author has clearly suffered.</p>
+
+<blockquote>
+  <p>REST has made a career out of boasting about concepts that any service architect in his right mind already respects, or about principles that it doesn’t even follow. Here are some excerpts, grabbed from top-ranked webpages.</p>
+</blockquote>
+
+<blockquote>
+  <p><em>REST is a client-server architecture. The client and the server both have a different set of concerns.</em> What a scoop in the software world.</p>
+</blockquote>
+
+<p>This is a bit of a misquote of <a href="https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm">Roy Fieldings REST dissertation</a>:</p>
+
+<pre class="highlight plaintext"><code>5.1.2 Client-Server
+
+The first constraints added to our hybrid style are those of the client-server architectural style (Figure 5-2), described in Section 3.4.1. Separation of concerns is the principle behind the client-server constraints. By separating the user interface concerns from the data storage concerns, we improve the portability of the user interface across multiple platforms and improve scalability by simplifying the server components. Perhaps most significant to the Web, however, is that the separation allows the components to evolve independently, thus supporting the Internet-scale requirement of multiple organizational domains.
+</code></pre>
+
+<p>Nobody said this was a brand new, idea, but it's absolutely something that needed to be said as at the time RPC folks often did not consider this to be something worth worrying about. I'd rather be pleased that a good idea I was aware of was incorporated into REST, than complain about that good idea not be new to <em>me</em>.</p>
+
+<blockquote>
+  <p>REST provides a uniform interface between components. Well, like any other protocol does, when it’s enforced as the franca lingua of a whole ecosystem of services.</p>
+</blockquote>
+
+<p>Another misquote of Roy Fielding, who originally wrote:</p>
+
+<pre class="highlight plaintext"><code>5.1.5 Uniform Interface
+
+The central feature that distinguishes the REST architectural style from other network-based styles is its emphasis on a uniform interface between components (Figure 5-6). By applying the software engineering principle of generality to the component interface, the overall system architecture is simplified and the visibility of interactions is improved. Implementations are decoupled from the services they provide, which encourages independent evolvability. The trade-off, though, is that a uniform interface degrades efficiency, since information is transferred in a standardized form rather than one which is specific to an application's needs. The REST interface is designed to be efficient for large-grain hypermedia data transfer, optimizing for the common case of the Web, but resulting in an interface that is not optimal for other forms of architectural interaction.
+
+In order to obtain a uniform interface, multiple architectural constraints are needed to guide the behavior of components. REST is defined by four interface constraints: identification of resources; manipulation of resources through representations; self-descriptive messages; and, hypermedia as the engine of application state. These constraints will be discussed in Section 5.2.
+</code></pre>
+
+<p>The "Uniform Interface" criteria means not inventing your own conventions inside the protocols being used like RPC and GraphQL do for example.</p>
+
+<p>HTTP verbs, headers, all the things the author scoffed at, are the uniform interfaced being used appropriately. When REST is implemented inside HTTP, all HTTP tools can be used, and network caching, debugging, monitoring for errors, etc can be used perfectly.</p>
+
+<p>For example, tools like Runscope Traffic or NewRelic will not know that an error happened if you rely on <code>{ success: false }</code> or some other home-made convention.</p>
+
+<blockquote>
+  <p>Rest is awesome, because it is STATELESS. Yes there is probably a huge database behind the webservice, but it doesn’t remember the state of the client. Or, well, yes, actually it remember its authentication session, its access permissions… but it’s stateless, nonetheless. Or more precisely, just as stateless as any HTTP-based protocol, like simple RPC mentioned previously.</p>
+</blockquote>
+
+<p>Oh dear, are you maintaining sessions internally despite using a RESTish interface? I've had to hit login and logout on various sides of making requests, and the server was fairly unstable under load. Failure to log out would then cause more issues as the servers sessions were all taken. Other servers will maintain the session for <em>that server</em>, which obviously falls apart as soon as a load balancer is in place.</p>
+
+<p>This is a mess, and if each request was simply accepting some sort of token and validating on each request it would not matter which server is hit, and no logouts are ever necessary.</p>
+
+<blockquote>
+  <p>With REST, you can leverage the power of HTTP CACHING! Well here is at last one concluding point: a GET request and its cache-control headers are indeed friendly with web caches. That being said, aren’t local caches (Memcached etc.) enough for 99% of web services? Out-of-control caches are dangerous beasts; how many people want to expose their APIs in clear text, so that a Varnish or a Proxy on the road may keep delivering outdated content, long after a resource has been updated or deleted? Maybe even delivering it “forever”, if a configuration mistake once occurred? A system must be secure by default. I perfectly admit that some heavily loaded systems want to benefit from HTTP caching, but it costs much less to expose a few GET endpoints for heavy read-only interactions, than to switch all operations to REST and its dubious error handling.</p>
+</blockquote>
+
+<p>You can leverage the power of HTTP caching with any HTTP API, but something REST recommends is that resources are meant to explicitly define their cacheability:</p>
+
+<blockquote>
+  <p>REST enables intermediate processing by constraining messages to be self-descriptive: interaction is stateless between requests, standard methods and media types are used to indicate semantics and exchange information, and responses explicitly indicate cacheability. - Roy Fielding</p>
+</blockquote>
+
+<p>Specifically, I want to focus on this:</p>
+
+<blockquote>
+  <p>That being said, aren’t local caches (Memcached etc.) enough for 99% of web services?</p>
+</blockquote>
+
+<p>Memcache caching data and utilizing HTTP caching only appear somewhat equivalent if you are <em>caching based on time alone</em>.</p>
+
+<p>If we're only discussing based on time alone (5 seconds, 10 minutes, 24 hours, etc), then yeah the two appear similar, but there's one rather key difference: who is defining that time?</p>
+
+<p>If Service A is being called by Client X, locally caching the response on Client X with memcache/redis/etc will work perfectly fine, but Client X is responsible for deciding how long that cache should last. Maybe there was some communication between times at the time of implementation, where "3 hours" was decided, and Client X uses 3 hours.</p>
+
+<p>Well… what if Service A realizes that 2 hours would be more appropriate due to improving their data processing and making data update more quickly? Or what 6 hours to improve performance? If those teams are still in close communication, they can try to get that changed, and so long as the email doesnt get lost or the ticket doesn't vanish into a JIRA backlog, those teams will eventually get their caching back on point.</p>
+
+<p>If there is also Client Y and Cient Z showing this data, they're going to have disparate data for the entire duration of the development cycle required to get them all updated.</p>
+
+<p>This is much much more complex if Client X, Y and Z all work at different companies, speak different languages, or for any one of hundreds of other reasons.</p>
+
+<p>HTTP Caching via <code>Cache-Control</code> or <code>Expires</code> centralizes the expiry time on the server, meaning clients all over the world will respect the decisions made by the server so long as they're coded to follow the HTTP response, instead of hardcoding stuff. Lots of middlewares support this, like the Ruby gem <a href="https://github.com/lostisland/faraday/">Faraday</a> middleware <a href="https://github.com/plataformatec/faraday-http-cache">Faraday HTTP Client</a>.</p>
+
+<p>It of course still uses memcache/redis/etc to cache the response, it just handles the "how long" for you. I've explained all of this in an article on <a href="https://blog.apisyouwonthate.com/speeding-up-apis-apps-smart-toasters-with-http-response-caching-a67becf829c6">HTTP response caching</a>.</p>
+
+<p>Even just this difference makes HTTP caching seem more valuable, but wait, there's more!</p>
+
+<p>The author unfortunately entirely ignores the concept of <a href="https://robots.thoughtbot.com/introduction-to-conditional-http-caching-with-rails">HTTP conditional caching</a>, which is fantastic.</p>
+
+<p>For example, if I implement traditional expiry based caching alone, I have this thing for X hours; let's say 8. In that time, things could have changed, and if I want to know about changes I need to subscribe to AMQP messages or some real-time API to provide invalidations. This might be possible to make, but its a whole lot of extra architecture to solve a problem that the HTTP specification has solved for you.</p>
+
+<p>With conditional caching I can make a lower expiry, say 1 hour. It'll pass along the ETag and essentially ask the server: "Only generate a bunch of JSON and shove it over the pipe <strong>if</strong> it is different from what I already have". If it's the same, the server gives you a nice little 304, the server doesn't have to do as much work, no waiting for a lump of JSON, no parsing it locally, and you can be happy knowing you're still not serving the right data.</p>
+
+<p>If the data has changed, you'll get the up to date data, and everyone is happy.</p>
+
+<p>On many systems I've seen, the response time for a 304 is half that of the 200, depending obviously on how overloaded your responses are.</p>
+
+<p>As a third benefit, HTTP Caching allows systems to say "I don't care about your cache, in this instance I 100% want the freshest thing and performance be damned", which is not something you can do without building non-standard ways of doing it. That's that Uniform Interface thing again.</p>
+
+<blockquote>
+  <p>Thanks to all this, REST has HIGH PERFORMANCE! Are we sure of that? Any API designer knows it: locally, we want fine-grained APIs, to be able to do whatever we want; and remotely, we want coarse-grained APIs, to limit the impact of network round-trips. Here is again a domain in which REST fails miserably. The split of data between “resources”, each instance on its own endpoint, naturally leads to the N+1 Query problem. To get a user’s full data (account, subscriptions, billing information…), you have to issue as many HTTP requests; and you can’t parallelize them, since you don’t know in advance the unique IDs of related resources. This, plus the inability to fetch only part of resource objects, naturally creates nasty bottlenecks.</p>
+</blockquote>
+
+<p>Well, the author here completely ignores sparse fieldsets (specifying the fields to return) and compound documents (including related items in the response), which absolutely solve the problem the author is describing. It's weird the author never noticed these techniques, as they've been popularized for years in REST APIs, and are now a fundamental part of GraphQL.</p>
+
+<p>Despite this problem being solved, many REST advocates are advocating for a slightly more more modern approach of creating <a href="https://blog.apisyouwonthate.com/lets-stop-building-apis-around-a-network-hack-9a68f7e83dd2">smaller more targeted resources, and utilizing HTTP/2</a>. This reduces the importance of the HTTP network bottleneck, and of course <a href="https://tools.ietf.org/html/draft-ietf-httpbis-early-hints-05">Early Hints</a> and <a href="https://http2.github.io/faq/#whats-the-benefit-of-server-push">Server Push</a> can start pushing requested responses into the pipe removing the "missing IDs" issue the author describes.</p>
+
+<p>Basically this paragraph is wrong on two counts.</p>
+
+<ol>
+  <li>The described problem has already been sufficiently solved in various popular standards</li>
+  <li>The described problem is also solved even more efficiently in HTTP/2</li>
+</ol>
+
+<blockquote>
+  <p>REST offers better compatibility. How so? Why do so many REST webservices have “/v2/” or “/v3/” in their base URLs then? Backwards and forward compatible APIs are not hard to achieve, with high level languages, as long as simple rules are followed when adding/deprecating parameters. As far as I know, REST doesn’t bring anything new on the subject.</p>
+</blockquote>
+
+<p>Global versioning and the like are the result of RPC-minded folks (like the author) designing APIs and ignoring the concept of <a href="https://blog.apisyouwonthate.com/api-versioning-has-no-right-way-f3c75457c0b7">API Evolution</a>.</p>
+
+<p>Using JSON Schema etc can make this a lot easier. Something the RPC author may have picked up from the SOAP days using WSDL, very similar concepts.</p>
+
+<blockquote>
+  <p>REST is so easy, it can be queried from any shell, with CURL! OK, actually, every HTTP-based protocol can be queried with CURL. Even SOAP. Issuing a GET is particularly straightforward, for sure, but good luck writing json or xml POST payloads by hand; people usually use fixture files, or, much more handy, full-fledged API clients instantiated directly in the command line interface of their favorite language.</p>
+</blockquote>
+
+<p>Agree, writing JSON or XML on the command line sounds terrible, which is why everyone uses Postman or similar. I've not seen anyone advocating using CURL for RESTful interactions since 2010 somewhere, and I pointed out how weird that was then.</p>
+
+<blockquote>
+  <p>“The client does not need any prior knowledge of the service in order to use it”. This is by far my favourite quote. I’ve found it numerous times, under different forms, especially when the buzzword HATEOAS lurked around; sometimes with some careful (but insufficient) “except” phrases following.</p>
+</blockquote>
+
+<p>Well, once a developer understands HTTP and REST, you can understand any RESTful API that actually follows those constraints. Again, they're not saying "Any REST API will immediately make sense to literally anyone that just got into web development" or anything else daft, they're saying that REST APIs describe themselves. Again, <a href="https://blog.apisyouwonthate.com/representing-state-in-rest-and-graphql-9194b291d127">Representing State in REST and GraphQL</a> explains this (and HATEOAS).</p>
+
+<blockquote>
+  <p>Still, I don’t know in which fantasy world these people live, but in this one, a client program is not a colony of ants; it doesn’t browse remote APIs randomly, and then decide how to best handle them, based on pattern recognition or black magic. Quite the opposite; the client has strong expectations on what it means, to PUT this one field to this one URL with this one value, and the server had better respect the semantic which was agreed upon during integration, else all hell might break loose.</p>
+</blockquote>
+
+<p>Nobody is talking about magic. Please listen to <a href="http://apibusters.com/">this podcast</a>. for a full response to this confusion, as its a common one.</p>
+
+<blockquote>
+  <p>Each web framework has its own way of defining URL endpoint. So expect some big dependencies, or a good layer of handwritten boilerplate, to plug your existing API onto your favorite server as a set of REST endpoint.</p>
+
+  <p>Libraries like Django-Rest-Framework automate the creation of REST APIs, by acting as data-centric wrappers above SQL/noSQL schemas. If you just want to make “CRUD over HTTP”, you could be fine with them. But if you want to expose real APIs, with workflows, constraints and such, you’ll have a hard time bending any REST framework to fit your needs.</p>
+
+  <p>Be prepared to connect, one by one, each HTTP method of each endpoint, to the corresponding method call; with a fair share of handmade exception handling, to translate passing-through exceptions into corresponding error codes and payloads.</p>
+</blockquote>
+
+<p>Wait, what? Who is just copying and pasting APIs around between codebases? Why would you do any of that?</p>
+
+<p>That's like complaining that a hotel booking validation form can't be copied from Django to Rails, or… what? Ugh.</p>
+
+<blockquote>
+  <p>How to industrialize client-side integration?</p>
+</blockquote>
+
+<p>JSON Schema. 👍🏼</p>
+
+<blockquote>
+  <p>You’ll have to craft URLs by hand, write serializers and deserializers, and learn how to workaround the ambiguities of the API. Expect quite some trial-and-error before you tame the beast.</p>
+</blockquote>
+
+<p>Good lord no, that's what HATEOAS is for.</p>
+
+<blockquote>
+  <p>Do you know how webservices providers make up for this, and ease adoption?</p>
+
+  <p>Simple, they write their own official client implementations.</p>
+
+  <p>FOR. EVERY. MAJOR. LANGUAGE. AND. PLATFORM.</p>
+</blockquote>
+
+<p>You can generate those from OpenAPI/JSON Schema… but yeah creating tools that simplify integration absolutely gets more folks using your system. This is not a <em>requirement</em> but a recommended approach to improving developer experience.</p>
+
+<blockquote>
+  <p>For decades, about every programming language has functioned with the same workflow: sending inputs to a callable, and getting results or errors as output. This worked well. Quite well.</p>
+</blockquote>
+
+<p>Confusing REST API URIs with callables is the whole problem, that is what RPC is.</p>
+
+<blockquote>
+  <p>I don’t doubt that some smart people out there will provide cases where REST shines; they’ll showcase their homemade REST-based protocol, allowing to discover and do CRUD operation on arbitrary object trees, thanks to hyperlinks; they’ll explain how the REST design is so brilliant, that I’ve just not read enough articles and dissertations about its concepts.</p>
+</blockquote>
+
+<p>Yeah respectively this is literally it. Here are loads of articles.</p>
+
+<blockquote>
+  <p>I don’t care. Trees are recognized by their own fruits. What took me a few hours of coding and worked very robustly, with simple RPC, now takes weeks and can’t stop inventing new ways of failing or breaking expectations. Development has been replaced by tinkering.</p>
+</blockquote>
+
+<p>Burning fossil fuels is way easier than setting up solar panels, but that doesn't make it a better idea. Overuse of RPC is ignorant and causes problems down the line, rather similarly.</p>
+
+<blockquote>
+  <p>The future could be bright. There are still tons of excellent protocols available, in binary or text format, with or without schema, some leveraging the new abilities of HTTP2… so let’s move on, people.</p>
+</blockquote>
+
+<p>Or just use HTTP/2 for your REST API, which would solve that network bottleneck thing the author mentions, amongst many other issues.</p>
+
+<p>I get it, REST is a complex topic. Too many people think they understand it, and are falsely validated when they bump into other people who don't understand it. Folks everywhere are building RESTish APIs which are basically just RPC + HTTP verbs + Pretty URLs, and as that doesn't seem very helpful they write giant articles explaining why that's not very useful…</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>The future <em>is</em> bright, we can get there through education, usage of standards, and avoiding bandwagon hopping. As soon as we stop <a href="https://blog.apisyouwonthate.com/lets-stop-building-apis-around-a-network-hack-9a68f7e83dd2">designing APIs around a network hack</a>, <a href="https://blog.apisyouwonthate.com/api-versioning-has-no-right-way-f3c75457c0b7">thing more intelligently about API versioning</a>, and really <a href="https://blog.apisyouwonthate.com/guessing-api-contracts-ac1b7eaebced">commit to contracts</a>, the REST API world will be fantastically popular over the next few years.</p>
+
+<p><a href="http://json-schema.org/latest/json-schema-hypermedia.html">JSON HyperSchema</a> alone is going to solve confusion around hypermedia controls (HATEOAS), and make writing contracts via specifications far far easier.</p>
+
+          <hr>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/api/2017/08/26/one-month-since-openapi-v3-0/">One Month Since OpenAPI v3.0</a>
+                </p>
+                <p style="float:right">
+                    Next:
+                    <a class="button" href="/api/2018/01/20/rest-confusion-explained-further/">Still Going on REST is the new SOAP</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

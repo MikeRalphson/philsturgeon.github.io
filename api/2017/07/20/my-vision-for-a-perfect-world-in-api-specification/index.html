@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>Chasing the Perfect API Specification Workflow | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="Chasing the Perfect API Specification Workflow" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="Documentation is a nice thing to have, but it is often treated as optional or superfluous, especially in teams where the clients and servers are managed by the same people. Here the code is considered the contract, so why define it again in documentation?" />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="Chasing the Perfect API Specification Workflow | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/">
+  <meta name="twitter:description" content="Documentation is a nice thing to have, but it is often treated as optional or superfluous, especially in teams where the clients and servers are managed by the same people. Here the code is considered the contract, so why define it again in documentation?">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">Chasing the Perfect API Specification Workflow</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2017-07-20 15:32:00 UTC">
+                Jul 20 2017
+              </time>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/json-schema/">#json-schema</a>
+              <a href="/tag/api-specs/">#api-specs</a>
+              <a href="/tag/openapi/">#openapi</a>
+              <a href="/tag/raml/">#raml</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <hr>
+
+          <p>Documentation is a nice thing to have, but it is often treated as optional or superfluous, especially in teams where the clients and servers are managed by the same people. Here the code is considered the contract, so why define it again in documentation?</p>
+
+<p>Certainly, with all the tooling around, API documentation seems like "another thing to do". You already have to define all the fields/types/values in a series of places:</p>
+
+<ol>
+  <li>Prototyping</li>
+  <li>Serializers</li>
+  <li>Validation</li>
+  <li>Integration tests</li>
+  <li>Documentation</li>
+  <li>Postman Collections</li>
+</ol>
+
+<p>Seems a bit redundant to have to build all these things, which for years has lead me to look for ways to simplify things. When documentation is considered an extra job, that job wont get done. If you can get entice developers with cool functionality (like automating some of the mundane work involved in the list above) then documentation can happen for free.</p>
+
+<p>A few months back I started to realize they could all be simplified by API specifications, writing contracts in one format, which can be used for a lot of different stuff: <a href="http://json-schema.org">JSON Schema</a>.</p>
+
+<p>Here are the requirements for my imagined perfect workflow.</p>
+
+<ul>
+  <li>One source of truth where developers need to update stuff</li>
+  <li><a href="https://philsturgeon.uk/api/2016/11/22/apis-documentation-first/">API Design / Prototyping</a> - Design first, code later when you've agreed on contracts</li>
+  <li><a href="https://stripe.com/docs/api">Beautiful documentation for humans</a> built without any effort</li>
+  <li><a href="https://code.tutsplus.com/tutorials/validating-data-with-json-schema-part-1--cms-25343">Validate payloads before you send em</a> on the client side</li>
+  <li>RSpec matchers providing <a href="https://robots.thoughtbot.com/validating-json-schemas-with-an-rspec-matcher">contract testing API responses</a></li>
+  <li>Documentation testing to <a href="https://philsturgeon.uk/api/2015/01/28/dredd-api-testing-documentation/">confirm docs arent lies</a></li>
+  <li><a href="https://apimatic.io/">SDK Generators</a> with customisable templates</li>
+</ul>
+
+<p>I've been on a mission to make this happen, and after months of research I've found it doesn't exist <em>just yet</em>. Luckily it's bloody close.</p>
+
+<h2 id="what-about-api-blueprint">What about API Blueprint?</h2>
+
+<p>API Blueprint is simple, great for planning, but the tooling in some areas is a little lacking. Apiary plan to <a href="http://apibusters.com/post/episode-02-api-blueprint/">add more validation functionality to MSON</a>, but tooling around it would all have to be invented from scratch.</p>
+
+<p>Think of a language. That language has <a href="http://json-schema.org/implementations.html#libraries">at least one JSON Schema validator</a>, and most testing frameworks have assertion helpers to confirm that a response matches a JSON Schema file. API Blueprint does not have this, and doing so would be a herculean effort.</p>
+
+<p>Beyond that, HTML generators for API Blueprint have lagged behind the newer functionality added (MSON). I had to <a href="https://github.com/danielgtaylor/aglio/issues/103#issuecomment-300870872">hack MSON data structures</a> into the templates, and my CSS is not on point.</p>
+
+<p>Let's see how API Blueprint ranks:</p>
+
+<ul>
+  <li>
+    <del>One source of truth where developers need to update stuff</del>
+  </li>
+  <li>
+    API Design / Prototyping
+  </li>
+  <li>
+    <del>Beautiful documentation for humans built without any effort</del></li>
+  <li>
+    <del>Validate payloads before you send em on the client side</del>
+  </li>
+  <li>
+    <del>RSpec matchers providing contract testing API responses</del>
+  </li>
+  <li>
+    Documentation testing to confirm docs arent lies
+  </li>
+  <li>
+    <del>SDK Generators with customisable templates</del>
+  </li>
+</ul>
+
+<p>Sturgeons Perfect Workflow Score: 29%</p>
+
+<h2 id="what-about-raml">What about RAML</h2>
+
+<p>RAML v1.0 supporting JSON Schema seemed initially really promising, and it supported <a href="https://tools.ietf.org/html/draft-pbryan-zyp-json-ref-03">JSON Ref</a> to help keep file sizes down. I had some successes, but HTML doc generation was a mess.</p>
+
+<p>I struggled to example values in the request/response as API Blueprint would. I’d hoped to see an example payload built with the default or example values I provide for each field, but they would not show up. Instead documentation suggested I had to pass in my own hand-crafted examples.</p>
+
+<p>Maybe this was a failing of raml2html and not RAML at large, but I couldn't find any other tools out there, and it was only one of a handful of issues with raml2html. If the main tool in the community is that lacking, I either need to ask WeWork to commit resources for me to work on building a HTML generator we can use, or we need another tool.</p>
+
+<p>There was a <a href="https://github.com/rzane/rspec-raml">RAML RSpec matcher</a> floating around that supported v0.8 but not v1.0.</p>
+
+<p>On the plus side, writing in YAML was not as bloody awful as I always imagined it would be, and with most of the work being done in JSON Schema it mattered less what format the glue was in. Also there is a dredd-alike tool called <a href="https://github.com/cybertk/abao">Abao</a>.</p>
+
+<ul>
+  <li>
+    One source of truth where developers need to update stuff
+  </li>
+  <li>
+    API Design / Prototyping
+  </li>
+  <li>
+    <del>Beautiful documentation for humans built without any effort</del></li>
+  <li>
+    Validate payloads before you send em on the client side
+  </li>
+  <li>
+    <del>RSpec matchers providing contract testing API responses</del>
+  </li>
+  <li>
+    Documentation testing to confirm docs arent lies
+  </li>
+  <li>
+    <del>SDK Generators with customisable templates</del>
+  </li>
+</ul>
+
+<p>Sturgeons Perfect Workflow Score: 57%</p>
+
+<p>Whilst wondering about getting green light to dig into contributing to these tools, I was sent <a href="https://blogs.mulesoft.com/dev/api-dev/open-api-raml-better-together/">an article about the future of RAML</a>. Basically RAML is getting out of the service modeling game, focusing instead on data modeling. This would place it as a competitor to JSON Schema, making it was less interesting to me.</p>
+
+<p>They were deciding to let the only remaining competitor handle service modeling: OpenAPI.</p>
+
+<h2 id="so-what-about-openapi">So What about OpenAPI</h2>
+
+<p>OpenAPI (previously called Swagger) is a tool I've been actively avoiding for years. I ran across it first via a PHP annotation-to-HTML based tool, and the specification was probably v1.2. I really didn't like the tool, the workflow, the <a href="https://swagger.io/swagger-ui/">Swagger UI</a>, or anything about it at all.</p>
+
+<p>That early negative association stuck with me for years, and I entirely ignored Swagger v2.0. Luckily these days "OpenAPI" (the new name for Swagger) is a whole new world. v2.0 is loads better than v1.2, and whilst v2.0 requires some hacks to do anything useful (more on that in a second), the unfinished-but-imminent v3.0 is looking to solve the vast majority of issues in v2.0.</p>
+
+<p>Luckily these days we can ignore Swagger UI (which still looks like it was designed by a developer who's really into RPC), and use one of these two amazing tools: <a href="https://github.com/Rebilly/ReDoc">ReDoc</a> or <a href="https://github.com/sourcey/spectacle">Spectacle</a>.</p>
+
+<p>With beautiful HTML generation, supposed JSON Schema support, and Dredd supporting it too, I thought I'd found my perfect workflow.</p>
+
+<p>Perfect isn't right, but it's close.</p>
+
+<h3 id="json-schema-divergence">JSON Schema Divergence</h3>
+
+<p>OpenAPI v2.0 was based on <a href="https://tools.ietf.org/html/draft-zyp-json-schema-04">JSON Schema Draft 4</a>, but it would be inaccurate to say OpenAPI is JSON Schema. OpenAPI v2.0 ended up being both a sub-set and a super-set of
+JSON Schema Draft v4, were some stuff is supported, some stuff is missing, and some stuff is <em>different</em>.</p>
+
+<p>OpenAPI v3.0 will solve this a bit on release by deprecating some of their differences to match to JSON Schema way of doing things, but <a href="https://github.com/OAI/OpenAPI-Specification/blob/OpenAPI.next/versions/3.0.md#properties">not all have been resolved</a>.</p>
+
+<p>For example, v2.0 has no way to say "this field could be null". JSON Schema would let you write <code>type: ['string', 'null']</code>, but that would flag as invalid in an OpenAPI validator. v3.0 will still not support this, instead offering <a href="https://github.com/OAI/OpenAPI-Specification/blob/OpenAPI.next/versions/3.0.md#fixed-fields-20">their own syntax</a>: <code>nullable: true</code>.</p>
+
+<p>OpenAPI v3.0 will be out any minute, and so for it's been in feature freeze for a long time. The core team have for a while been saying they don't think JSON Schema is an ideal format, hinted that they don't think they need to stick to it, or might support multiple inputs and JSON Schema is just one of them. In some places some have also said that converging the with JSON Schema would make sense for <code>type</code> specifically, so I'm seeing very mixed signals about JSON Schema 100% compliance. We'll have to see what happens in 3.1.</p>
+
+<p>If JSON Schema is going to be part of my workflow, I'll have to use <a href="https://github.com/garethr/openapi2jsonschema">a converter</a>. This still feels a little backwards as I want the contracts written in JSON Schema and just referenced from the docs, but I'll need to build a JSON Schema to OpenAPI converter for that… maybe I will.</p>
+
+<h3 id="the-void-of-uselessness-between-v20-and-v30">The Void of Uselessness between v2.0 and v3.0</h3>
+
+<p>Accepting the loss of JSON Schema as a source, I continued with the viability experiment. I initially struggled massively to convert a ~20 endpoint RESTish API from API Blueprint to OpenAPI.</p>
+
+<p>Crucial features missing from v2.0 like "this field could be null" really jammed a stick in my spokes.</p>
+
+<p>Often I would see issues closed down with "It's coming in v3.0", but nobody can just jump into v3.0 whilst it's unfinished, with tooling in varying levels of support for the various RC versions that exist. Besides, rewriting these specs isn't trivial, with <a href="https://blog.readme.io/an-example-filled-guide-to-swagger-3-2/">sizable changes existing between the two</a>, and only <a href="https://github.com/mermade/swagger2openapi">unofficial converters</a> existing.</p>
+
+<p>During the void between v2.0 and v3.0, there was no v2.1 release to ease the pain. The ecosystem has bridged the gap by awkwardly baking v3.0 features into v2.0 tooling, utilizing a combination of vendor prefixes (<code>x-</code>), and unofficial syntax supported by some tools but not others.</p>
+
+<p>For example: example. The feature exists officially in v3.0, but does not exist in v2.0. Example is important for both Dredd (it uses these values to make real API requests and test your documentation), and for human documentation. Without it, nothing is useful.</p>
+
+<p><a href="https://apiary.io/">Apiary</a> (the folks behind API Blueprint and Dredd) <a href="https://help.apiary.io/api_101/swagger-extensions/">offer <code>x-example</code></a>, which solves Dredd, but ReDoc will not know that example value exists, and documentation looks like crap.</p>
+
+<p>If you switch to using <code>example</code> (which ReDoc actually supports via <a href="https://github.com/APIs-guru/openapi-sampler">OpenAPI Sampler</a> even though it's not official v2.0 syntax), Dredd will error due to <code>example</code> being an unexpected property. I'm working on a PR to make ReDoc support <code>x-example</code>.</p>
+
+<p>Beyond that, nullable is still a mess.</p>
+
+<p>Whilst a comment in <a href="https://github.com/apiaryio/dredd/issues/283">a Dredd issue thread</a> suggests that the JSON Schema syntax of <code>type: ['string', 'null']</code> will work… <a href="https://github.com/swagger-api/swagger-editor/issues/1302">it doesn't</a>. Maybe their renderer or parser-of-choice is lax enough to support it, but ReDoc and any strict parser will error.</p>
+
+<p>In the mean time, renderers and parsers are supporting <code>x-nullable: true</code>. Example: https://github.com/Rebilly/ReDoc/pull/95</p>
+
+<p>Seeing as ReDoc supports <code>x-nullable</code>, it renders just fine, but Dredd does not know about this extension. <a href="https://github.com/apiaryio/fury-adapter-swagger/issues/112">Yet</a>. This will cause failures in your Dredd run due to responses not matching the expected response if the field contains a null, even though you've marked that field as being nullable.</p>
+
+<p>So, this is the sort of thing that happens when you rely on vendor extensions. I know that - and so does the CSS community - but this route is forced upon anyone during this v2.0 to v3.0 gap.</p>
+
+<p>Those oddities aside: so long as OpenAPI v3.0 comes out soon, and the tooling supports it quickly, these weird quirks wont matter.</p>
+
+<ul>
+  <li>
+    API Design / Prototyping
+  </li>
+  <li>
+    <del>One source of truth where developers need to update stuff</del>
+  </li>
+  <li>Beautiful documentation for humans built without any effort</li>
+  <li>
+    Validate payloads before you send em on the client side
+  </li>
+  <li>
+    RSpec matchers providing contract testing API responses
+  </li>
+  <li>
+    Documentation testing to confirm docs arent lies
+  </li>
+  <li>
+    SDK Generators with customisable templates
+  </li>
+</ul>
+
+<p>Sturgeons Perfect Workflow Score: 86%</p>
+
+<p>That's v3.0 anyway. OpenAPI v2.0 gets a score of 71% due to either losing Dredd or losing ReDoc.</p>
+
+<h2 id="getting-people-involved">Getting People Involved</h2>
+
+<p>Initially I was just doing research, finding out how to achieve the dream workflow for API specification. It was spawned by trying to get people at work to actually document APIs. Working at a company where the closest thing to documentation is outdated incomplete Postman collections can be really frustrating, and my existing attempt using API Blueprint and a hacked Aglio output wasn't getting people excited.</p>
+
+<p>To get people excited I thought I would need to offer more than just documentation. API Blueprint got us that, but putting a lot of work in just to get documentation for services that are already in production is never going to be a task anyone jumps at.</p>
+
+<p>Trying to get JSON Schema files into the mix would get us at least the RSpec contract testing that I <em>knew</em> people would be excited about, but with the divergence in OpenAPI v2.0 I've had to kick that can down the road a little.</p>
+
+<p>What really surprised me was that people at work are really excited about getting their systems added to the doucmentation. We've ported a few Postman collections to OpenAPI to get started, and I'm looking into other ways to get the ball rolling for some of the other teams, but we're up to 6 APIs and counting.</p>
+
+<p>Never have I been happier to be wrong. I still think documentation should be considered a happy by-product of a well specified API, but if that documentation looks good enough it might just be enough to get people doing the grunt work.</p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>Plenty more work to be done.</p>
+
+<ol>
+  <li>Focus on getting enough OpenAPI v2.0 done that we at least have documentation</li>
+  <li>Upgrade to v3.0 when it's out</li>
+  <li>Generate <code>tests/contracts/foo.json</code> from <code>docs/definitions/foo.json</code> for now. Backwards as that is</li>
+  <li>Implement <a href="https://robots.thoughtbot.com/validating-json-schemas-with-an-rspec-matcher">RSpec / JSON Schema matchers</a> to simplify integration tests and coerce folks into keeping spec files up to date</li>
+  <li>Sync OpenAPI changes to a read-only Postman Collections</li>
+  <li>Sync OpenAPI changes to a read-only Paw Collections (so people can use either!)</li>
+</ol>
+
+<h2 id="update-2017-08-08">Update 2017-08-08</h2>
+
+<p>When I discuss this "perfect workflow", I'm talking about my current needs. At work I want to get all the stuff above done, so that things at work are awesome. This caused me to miss out on two key important points.</p>
+
+<p><strong>Hypermedia:</strong> I've not mentioned Hypermedia here. I'm still struggling to decide how API specification and hypermedia fit together, as it can live in the HTTP body or in the metadata. More on that in the future - but work does not use Hypermedia (yet)</p>
+
+<p><strong>GraphQL:</strong> Theoretically with JSON Schema or OpenAPI / Swagger as a base for our contracts we gain GraphQL almost for free via a multitude of converters. I'd love to experiment with tacking a GraphQL endpoint into an otherwise RESTish API, so the team can experiment at making their data highly querably (instead of the classic normalized approach) to avoid it being slow as dog-shit. That should help out data structuring in general as they do it, because without that work GraphQL and JSON-API-style includes are always going to suffer equally.</p>
+
+<p><em>I'm writing <a href="https://leanpub.com/api-specification-aint-just-for-nerds">a book about API specifications</a>, various formats, all that good stuff. It's a complicated world that I'm going to try and make simple for everyone.</em></p>
+
+          <hr>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/api/2017/06/19/representing-state-in-rest-and-graphql/">Representing State in REST and GraphQL</a>
+                </p>
+                <p style="float:right">
+                    Next:
+                    <a class="button" href="/api/2017/08/13/a-happy-compromise-between-customization-and-cacheability/">A Happy Compromise Between Customization and Cacheability</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

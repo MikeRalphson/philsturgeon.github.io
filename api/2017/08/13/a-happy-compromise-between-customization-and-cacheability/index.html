@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>A Happy Compromise Between Customization and Cacheability | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="A Happy Compromise Between Customization and Cacheability" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="With endpoint-based APIs you get to choose if you want increased likelihood of network cache hits, or the ability to slim down the response. The two goals are mutually exclusive, but there is a compromise that can be made." />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2017/08/13/a-happy-compromise-between-customization-and-cacheability/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="A Happy Compromise Between Customization and Cacheability | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2017/08/13/a-happy-compromise-between-customization-and-cacheability/">
+  <meta name="twitter:description" content="With endpoint-based APIs you get to choose if you want increased likelihood of network cache hits, or the ability to slim down the response. The two goals are mutually exclusive, but there is a compromise that can be made.">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">A Happy Compromise Between Customization and Cacheability</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2017-08-13 17:12:00 UTC">
+                Aug 13 2017
+              </time>
+              <a href="/tag/hypermedia/">#hypermedia</a>
+              <a href="/tag/hateoas/">#hateoas</a>
+              <a href="/tag/graphql/">#graphql</a>
+              <a href="/tag/rest/">#rest</a>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/http/">#http</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <hr>
+
+          <p>With endpoint-based APIs (REST, RESTish, SOAP, RPC, AJAX-ish junk, etc.) you get to choose if you want increased likelihood of network cache hits, or the ability to slim down the response. The two goals are mutually exclusive.</p>
+
+<p>Slimming responses can be achieved with concepts like <a href="jsonapi.org/format/#fetching-sparse-fieldsets">sparse fieldsets</a> (tl:dr; send <code>?fields=foo,bar</code> to just get foo and bar).</p>
+
+<p>This is common and popular for two reasons:</p>
+
+<ol>
+  <li>It takes fractionally less time to download a smaller repsonse over the network</li>
+  <li>Some of those fields might be computed on request, and as such are slow</li>
+</ol>
+
+<p>Specifications like <a href="http://www.odata.org/">OData</a> and <a href="jsonapi.org/format/#fetching-sparse-fieldsets">JSON-API</a> support this, and most of their tooling also support it. The trouble is, the more you allow a response to be customized, the lower the chance of a cache hit.</p>
+
+<p>If two different clients (eg: the web app and the iOS app) request slightly different fields, then they're not shared, and the network cache is keeping one set of caches for web and one for ios. That's half as useful, and the more different clients you have, the less useful network caching becomes (if you're using sparse fieldsets).</p>
+
+<p>This is a massive shame! <a href="http://varnish-software.com/">Varnish</a>, <a href="http://www.squid-cache.org/">Squid</a>, <a href="https://www.fastly.com/">Fastly</a>, etc., can all be a huge boost to the speed and stability of your architecture, and can save a bunch of money by reducing your application server hosting resources.</p>
+
+<p>For those using network caching, there are two common scenarios.</p>
+
+<h2 id="high-customization-low-cache-hits">High Customization, Low Cache Hits</h2>
+
+<p>The Turtles.com web app requests <code>GET /turtles?fields=name,lifespan</code> which takes 200ms.</p>
+
+<p>The Turtles.com iOS app then requests <code>GET /turtles?fields=name</code> which takes 192ms, because the network cache did not consider this request as a match for the first request (and rightly so). Skipping the <code>lifespan</code> field made the JSON serializer do a little less work, and the time in transit was reduced too, so we saved a few ms.</p>
+
+<h2 id="no-customization-high-cache-hits">No Customization, High Cache Hits</h2>
+
+<p>The Turtles.com web app requests <code>GET /turtles</code> which takes 220ms. That's a little slower as we've got all the fields (maybe 20 of them) coming back.</p>
+
+<p>The Turtles.com iOS app then requests <code>GET /turtles</code> the network cache considers that a hit, and short circuits the application server entiely, responding in 118ms.</p>
+
+<p>Even though the iOS app doesn't need all the fields, we've hit the network cache, and subsequent requests are matching.</p>
+
+<p>This scenario is what most REST APIs do. It's usually not an issue if fields are all precomputed and simply being fetched, but this scenario really falls apart when computed fields are part of the resource.</p>
+
+<h2 id="computed-fields-suck">Computed Fields Suck</h2>
+
+<p>I've seen a simple <code>"is_enterprise": true</code> field snuck into a serializer, which then makes 3-4 SQL queries to establish if the company should be considered enterprise (if it has more than 500 members, going via a pivot table, etc).</p>
+
+<p>It also had <code>"locations"</code> field, which is an array of data fetched from another system. This API is a farily slow responder on the best of days, and sometimes it has bad days. Bad days maybe this endpoint takes 1-2s instead of the 118-220ms we've been discussing.</p>
+
+<p>No amount of clever eager-loading or caching trickery can fully solve the fact that multiple computed fields are going to slow down all/some responses, especially when fetching a collection. Clients having their requests slowed down by being handed expensive information (that they didn't even want) is a completely understandable source of frustration.</p>
+
+<p>The obvious advice is "don't have expensive computed fields in the resource", and just pre-compute them, but sometimes these things are either unavoidable, or somebody else did it and you don't have time to fix everything all in one go. Let's accept them as an unfortunate reality and move on.</p>
+
+<p>One solution is see often a new endpoint: <code>GET /turtles/lean</code> which doesn't really help, and is occasionally a slippery slope to client and use-case specific endpoints (<code>GET /turtles/mobile</code>, <code>GET /turtles/ios</code>, <code>GET /turtles/ios-random-usecase-tuesday5</code>. That's no ideal (cache missing all over the shop and forces the team maintaining that API to know too much about specific use cases). It also does not help us with collections.</p>
+
+<p>Others do <code>?full=true</code> and have a "Basic" and "Full" serializer for the same response, which is a bit too binary to be considered customization. If you want to call the collection and only need one or two fields from that full version, you're stuck with <em>all</em> the fields, including whatever computed values are there which you still don't want.</p>
+
+<h2 id="reasonable-cache-hits-partial-customization">Reasonable Cache Hits, Partial Customization</h2>
+
+<p>One solution to make your endpoint-based API responses partially customizable is… partials!</p>
+
+<p>Google have been recommending this solution for years as a common best practice, and YouTube was doing before that.</p>
+
+<p><code>GET /turtles?partial=dimensions</code></p>
+
+<p>Instead of specifying fields, we specify a partial, which is like a nickname for a group of fields.</p>
+
+<p>Let's stop talking about turtles for a minute, and go back to that company example. Here's a simplified version of some code I wrote for WeWork:</p>
+
+<pre class="highlight ruby"><code><span class="k">class</span> <span class="nc">Api</span><span class="o">::</span><span class="no">V3</span><span class="o">::</span><span class="no">CompanyPresenter</span>
+  <span class="kp">attr_accessor</span> <span class="ss">:company</span><span class="p">,</span> <span class="ss">:partials</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">company</span><span class="p">,</span> <span class="ss">partials: </span><span class="p">[])</span>
+    <span class="vi">@company</span> <span class="o">=</span> <span class="n">company</span>
+    <span class="vi">@partials</span> <span class="o">=</span> <span class="no">Array</span><span class="p">(</span><span class="n">partials</span><span class="p">)</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span>
+    <span class="p">{</span>
+      <span class="ss">uuid:                        </span><span class="n">company</span><span class="p">.</span><span class="nf">uuid</span><span class="p">,</span>
+      <span class="ss">name:                        </span><span class="n">company</span><span class="p">.</span><span class="nf">name</span><span class="p">,</span>
+      <span class="ss">status:                      </span><span class="n">company</span><span class="p">.</span><span class="nf">status</span><span class="p">,</span>
+    <span class="p">}.</span><span class="nf">tap</span> <span class="k">do</span> <span class="o">|</span><span class="nb">hash</span><span class="o">|</span>
+      <span class="nb">hash</span><span class="p">[</span><span class="ss">:locations</span><span class="p">]</span> <span class="o">=</span> <span class="n">locations</span> <span class="k">if</span> <span class="p">(</span><span class="n">partials</span> <span class="o">&amp;</span> <span class="p">[</span><span class="s1">'locations'</span><span class="p">,</span> <span class="s1">'full'</span><span class="p">]).</span><span class="nf">any?</span>
+      <span class="nb">hash</span><span class="p">[</span><span class="ss">:enterprise</span><span class="p">]</span> <span class="o">=</span> <span class="n">company</span><span class="p">.</span><span class="nf">enterprise?</span> <span class="k">if</span> <span class="p">(</span><span class="n">partials</span> <span class="o">&amp;</span> <span class="p">[</span><span class="s1">'enterprise'</span><span class="p">,</span> <span class="s1">'full'</span><span class="p">]).</span><span class="nf">any?</span>
+
+      <span class="k">if</span> <span class="p">(</span><span class="n">partials</span> <span class="o">&amp;</span> <span class="p">[</span><span class="s1">'contact_info'</span><span class="p">,</span> <span class="s1">'full'</span><span class="p">]).</span><span class="nf">any?</span>
+        <span class="nb">hash</span><span class="p">[</span><span class="ss">:contact_info</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+          <span class="ss">name: </span><span class="n">company</span><span class="p">.</span><span class="nf">contact_name</span><span class="p">,</span>
+          <span class="ss">email: </span><span class="n">company</span><span class="p">.</span><span class="nf">contact_email</span><span class="p">,</span>
+          <span class="ss">phone: </span><span class="n">company</span><span class="p">.</span><span class="nf">contact_phone</span><span class="p">,</span>
+        <span class="p">}</span>
+      <span class="k">end</span>
+
+      <span class="k">if</span> <span class="n">partials</span><span class="p">.</span><span class="nf">include?</span> <span class="s1">'full'</span>
+        <span class="c1"># A bunch of other fields</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">locations</span>
+    <span class="no">ThirdPartyFooClient</span><span class="p">.</span><span class="nf">fetch_slow_ass_data</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre>
+
+<p>Then in the collection controller I implement:</p>
+
+<pre class="highlight ruby"><code>  <span class="k">def</span> <span class="nf">index</span>
+    <span class="n">companies</span> <span class="o">=</span> <span class="n">fetch_filtered_paginated_companies</span><span class="p">(</span><span class="n">params</span><span class="p">).</span><span class="nf">map</span> <span class="k">do</span> <span class="o">|</span><span class="n">company</span><span class="o">|</span>
+      <span class="no">Api</span><span class="o">::</span><span class="no">V3</span><span class="o">::</span><span class="no">CompanyPresenter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">company</span><span class="p">,</span> <span class="ss">partials: </span><span class="n">whitelist_partials</span><span class="p">).</span><span class="nf">as_json</span>
+    <span class="k">end</span>
+
+    <span class="n">render</span> <span class="ss">json: </span><span class="p">{</span> <span class="ss">companies: </span><span class="n">companies</span> <span class="p">}</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">show</span>
+    <span class="n">company</span> <span class="o">=</span> <span class="n">find_company</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">company</span> <span class="o">=</span> <span class="no">Api</span><span class="o">::</span><span class="no">V3</span><span class="o">::</span><span class="no">CompanyPresenter</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="n">company</span><span class="p">,</span> <span class="ss">partials: </span><span class="n">whitelist_partials</span><span class="p">).</span><span class="nf">as_json</span>
+    <span class="n">render</span> <span class="ss">json: </span><span class="p">{</span> <span class="ss">company: </span><span class="n">company</span> <span class="p">}</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">whitelist_partials</span>
+    <span class="k">if</span> <span class="n">params</span><span class="p">[</span><span class="ss">:partials</span><span class="p">]</span>
+      <span class="n">partials</span> <span class="o">=</span> <span class="no">Array</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="ss">:include</span><span class="p">].</span><span class="nf">split</span><span class="p">(</span><span class="s1">','</span><span class="p">))</span>
+      <span class="p">[</span><span class="s1">'contact_info'</span><span class="p">,</span> <span class="s1">'locations'</span><span class="p">,</span> <span class="s1">'enterprise'</span><span class="p">,</span> <span class="s1">'full'</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">partials</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre>
+
+<p>Now calling <code>GET /api/v3/companies</code> will result in only <code>uuid</code>, <code>name</code> and <code>status</code> being added, and if a client wants locations or any of the other allowed fields they can call them.</p>
+
+<p>The potential values will be advertised in OpenAPI documentation so people can find them, as this API does not even come close to having any HATEOAS descriptors or anything else. Yet.</p>
+
+<p>This code and this exact approach is not meant to be an example of wonderfully perfect API design.</p>
+
+<ul>
+  <li>I don't like versions in the URL and prefer <a href="https://www.mnot.net/blog/2012/12/04/api-evolution.html">evolution</a></li>
+  <li>Locations should almost certainly be a sub-collection</li>
+  <li>Using existing serializers instead of hacking my own would be better</li>
+  <li>Using JSON-API, HAL or Siren would be more useful instead of this naked JSON</li>
+</ul>
+
+<p>Personal preferences aside, I was able to implement this partial functionality in one endpoint very quickly and easily without breaking anything, and without rewriting the entire API. Sometimes you need partial solutions, and partial customization with <code>?partials=</code> is partial enough for me.</p>
+
+<h2 id="further-steps">Further Steps</h2>
+
+<p>Maybe make two different whitelists, one for resources and another for collections of resources. If your API has a high pagination limit (or no pagination 😱) and you're letting <code>?partial=full</code> then you could be in for a really bad time.</p>
+
+<h2 id="lols-what-about-graphql">Lols what about GraphQL</h2>
+
+<p>So, anyone reading this who's been hearing a lot about GraphQL would think: REST is dumb, GraphQL fixes all of this!</p>
+
+<p>Well no. REST provides these trade-offs for you to consider, and GraphQL forces your hand into the one option that it allows: high customization and no [network] cachability.</p>
+
+<p>As discussed in <a href="https://philsturgeon.uk/api/2017/01/26/graphql-vs-rest-caching/">GraphQL vs REST: Caching</a>, GraphQL does not work with existing HTTP endpoint-based network caching tools, so the only client options fall on the client attempting to handle it with very little insight, and cache invalidation/expires potentially being very different in two different clients, or your data all has to be restructured to support potentially any call, with any huge amount of nesting, and all of the serialization that comes with it.</p>
+
+<p>REST suggests you to make targeted endpoints with a very specific goal in mind, that handle the specific set of data in a performant way and offer a bunch of caching metadata for network tools to leverage. This should not be seen as a negative point, especially with HTTP/2 removing the issue of "multiple handshakes = slow".</p>
+
+<p>More on that shortly.</p>
+
+          <hr>
+<p>More on GraphQL:</p>
+<ul>
+  <li>
+    <a href='/api/2017/01/24/graphql-vs-rest-overview/'>GraphQL vs REST: Overview</a>
+  </li>
+  <li>
+    <a href='/api/2017/01/26/graphql-vs-rest-caching/'>GraphQL vs REST: Caching</a>
+  </li>
+  <li>
+    <a href='/api/2017/04/18/you-might-not-need-graphql/'>You Might Not Need GraphQL</a>
+  </li>
+  <li>
+    <a href='/api/2017/06/19/representing-state-in-rest-and-graphql/'>Representing State in REST and GraphQL</a>
+  </li>
+</ul>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/api/2017/07/20/my-vision-for-a-perfect-world-in-api-specification/">Chasing the Perfect API Specification Workflow</a>
+                </p>
+                <p style="float:right">
+                    Next:
+                    <a class="button" href="/api/2017/08/26/one-month-since-openapi-v3-0/">One Month Since OpenAPI v3.0</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>API Documentation: Do it First | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="API Documentation: Do it First" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="Two years ago I finished the first edition of Build APIs You Won&#x27;t Hate, and since then I&#x27;ve worked on bigger and better projects, using my API experience, honing some approaches, and throwing out some approaches entirely." />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2016/11/22/apis-documentation-first/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="API Documentation: Do it First | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2016/11/22/apis-documentation-first/">
+  <meta name="twitter:description" content="Two years ago I finished the first edition of Build APIs You Won&#x27;t Hate, and since then I&#x27;ve worked on bigger and better projects, using my API experience, honing some approaches, and throwing out some approaches entirely.">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">API Documentation: Do it First</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2016-11-22 03:58:00 UTC">
+                Nov 22 2016
+              </time>
+              <a href="/tag/building-rest-apis-in-rails/">#building-rest-apis-in-rails</a>
+              <a href="/tag/http/">#http</a>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/apiblueprint/">#apiblueprint</a>
+              <a href="/tag/video/">#video</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <p>More videos in this practice series "Building REST APIs with Rails":</p>
+<ul>
+  <li>
+    Episode 1:
+    <a href='/api/2016/11/22/apis-documentation-first/'>Documenting Your API First</a>
+  </li>
+  <li>
+    Episode 2:
+    <a href='/api/2016/12/02/mocking-apis-with-api-blueprint/'>Mocking APIs with API Blueprint</a>
+  </li>
+  <li>
+    Episode 3:
+    <a href='/api/2016/12/11/building-apis-with-rails-basic-serialization/'>Basic Serialization</a>
+  </li>
+  <li>
+    Episode 4:
+    <a href='/api/2016/12/21/building-rest-apis-with-rails-documentation-testing/'>Documentation Testing</a>
+  </li>
+  <li>
+    Episode 5 & 6:
+    <a href='/api/2017/01/03/building-apis-with-rails-handling-errors-nicely/'>Handling Errors Nicely</a>
+  </li>
+</ul>
+<hr>
+
+          <p>Two years ago I finished the first edition of <a href="https://apisyouwonthate.com">Build APIs You Won't Hate</a>, and since then I've worked on bigger and better projects, using my API experience, honing some approaches, and throwing out some approaches entirely.</p>
+
+<p>These projects were big and scary. I did some things I'm not proud of, and in general - between the anarchy - I just wanted to get away from a computer and ride my bike. Now I'm back, ready to share my experience, and have a video series in the works.</p>
+
+<p>To get this video series ready, I've been doing a series of <a href="http://livecoding.tv/philsturgeon/">LiveCoding.tv</a> semi-frequently. These iPhone headset recorded noisefests have generally been me covering certain topics, while I forget how things work and google around to remind myself, but they've been instrumental in getting the series off the ground.</p>
+
+<p>While that series is still being worked on (with my fancy new audio getup), I've decided to share some of these rough sessions, to help people out in the meantime.</p>
+
+<p>The first video is a topic I've covered a bit in the past: Documentation with API Blueprint. So, check out the video, and the notes that go with it:</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Q00H6BPVNQI" frameborder="0" allowfullscreen=""></iframe>
+
+<p><strong><a href="https://github.com/philsturgeon/livecoding-apisyouwonthate/tree/master/episode-01-documentation-first">Source Code</a></strong></p>
+
+<h2 id="interested-in-a-proper-series">Interested in a Proper Series?</h2>
+
+<p>These rough videos will be replaced with a nicely recorded series, and to get updates about that, just let me know your email address.</p>
+
+<!-- Begin MailChimp Signup Form -->
+<link href="//cdn-images.mailchimp.com/embedcode/horizontal-slim-10_7.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">
+	#mc_embed_signup{background:#fff; clear:left; font:14px; width:100%;}
+	/* Add your own MailChimp form style overrides in your site stylesheet or in this style block.
+	   We recommend moving this block and the preceding CSS link to the HEAD of your HTML file. */
+</style>
+
+<div id="mc_embed_signup">
+<form action="//apisyouwonthate.us10.list-manage.com/subscribe/post?u=f5c5ff66d95d11dec1b88cf54&amp;id=bef95bfd48" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate="">
+    <div id="mc_embed_signup_scroll">
+
+	<input type="email" value="" name="EMAIL" class="email" id="mce-EMAIL" placeholder="email address" required="" />
+    <!-- real people should not fill this in and expect good things - do not remove this or risk form bot signups-->
+    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_f5c5ff66d95d11dec1b88cf54_bef95bfd48" tabindex="-1" value="" /></div>
+    <div class="clear"><input type="submit" value="Subscribe" name="subscribe" id="mc-embedded-subscribe" class="button" /></div>
+    </div>
+</form>
+</div>
+
+<!--End mc_embed_signup-->
+
+<h2 id="notes">Notes</h2>
+
+<p>There are a few specification languages available, my favourite API Blueprint, and other popular alternatives <a href="http://swagger.io/">Swagger (Open API)</a> and <a href="https://raml.org/">RAML</a>.</p>
+
+<p>API Blueprint is built by the folks behind <a href="https://apiary.io/">Apiary</a>, which is a hosted product for hosting your documentation and providing tooling around it. Whilst I do not use Apiary itself for every project, it's a great place to start when it comes to building out documentation as the tooling is very easy to learn, and their plans start at free.</p>
+
+<pre class="highlight markdown"><code>FORMAT: 1A
+HOST: https://api.example.com/
+
+<span class="gh"># Example API</span>
+
+GET /message
+<span class="p">+</span> Response 200 (text/plain)<span class="sb">
+
+        Hello World!
+</span></code></pre>
+
+<p>With a basic Hello World of documentation showing up, we now need to build out some realistic  documentation.</p>
+
+<p>Just doing that off the top of your head is tough, so lets make a simple bullet list of resources and attributes that we'd like to see.</p>
+
+<p>For this step, imagine you're working with the whole team, writing up this list of fields in a Dropbox Paper, Google Doc, tmux session, codepad, etc.</p>
+
+<pre class="highlight markdown"><code><span class="p">-</span> products
+<span class="p">  -</span> name
+<span class="p">  -</span> description
+<span class="p">  -</span> style
+<span class="p">  -</span> apv
+<span class="p">  -</span> image_url
+<span class="p">  -</span> relationships
+<span class="p">    -</span> manufacturer
+<span class="p">    -</span> recent_reviews
+<span class="p">
+-</span> manufacturers
+<span class="p">  -</span> name
+<span class="p">  -</span> about
+<span class="p">  -</span> city
+<span class="p">  -</span> country
+<span class="p">
+-</span> reviews
+<span class="p">  -</span> body
+<span class="p">  -</span> rating
+<span class="p">  -</span> name
+<span class="p">  -</span> relationship
+<span class="p">    -</span> user
+<span class="p">    -</span> product
+<span class="p">
+-</span> users
+<span class="p">  -</span> username
+<span class="p">  -</span> full_name
+<span class="p">  -</span> email
+<span class="p">  -</span> password
+</code></pre>
+
+<p><em>Skip having relationships on the user. If you pile too many relationships on the user as they can get really slow. Use links sure, but having all the IDs for each user means it has to make multiple SQL queries for it all. Things get slow.</em></p>
+
+<h2 id="data-structures">Data Structures</h2>
+
+<p>Reusable structures that can be put into requests and responses, with basic validation supplied.</p>
+
+<p>We can easily convert the bullet points we just wrote into data structures using API Blueprint syntax:</p>
+
+<pre class="highlight markdown"><code><span class="gh"># Data Structures</span>
+
+<span class="gu">## Products</span>
+<span class="p">  -</span> name
+<span class="p">  -</span> description
+<span class="p">  -</span> style
+<span class="p">  -</span> apv
+<span class="p">  -</span> image_url
+<span class="p">  -</span> relationships
+<span class="p">    -</span> manufacturer
+<span class="p">    -</span> recent_reviews
+
+<span class="gu">## Manufacturers</span>
+<span class="p">  -</span> name
+<span class="p">  -</span> about
+<span class="p">  -</span> city
+<span class="p">  -</span> country
+
+<span class="gu">## Reviews</span>
+<span class="p">  -</span> body
+<span class="p">  -</span> rating
+<span class="p">  -</span> name
+<span class="p">  -</span> relationship
+<span class="p">    -</span> user
+<span class="p">    -</span> product
+
+<span class="gu">## Users</span>
+<span class="p">  -</span> username
+<span class="p">  -</span> full_name
+<span class="p">  -</span> email
+<span class="p">  -</span> password
+</code></pre>
+
+<p>Now they'll vanish from the output because they're secret hidden data.</p>
+
+<p>Onto grouping. stuff.</p>
+
+<pre class="highlight markdown"><code><span class="gh"># Group Section</span>
+
+<span class="gu">## Resource Section</span>
+
+<span class="gu">### Action Section</span>
+</code></pre>
+
+<p>To put this syntax into action, we can build out our products section.</p>
+
+<pre class="highlight markdown"><code><span class="gh"># Group Product</span>
+
+<span class="gu">## Product Collection [/products]</span>
+
+<span class="gu">### Retrieve All [GET]</span>
+<span class="p">
+-</span> Response 200 (application/json)<span class="sb">
+
+    - Attributes (array[Product])
+</span></code></pre>
+
+<p>Next we'll need to add POST. We could manually specify a Body, but instead, let's once again use MSON:</p>
+
+<pre class="highlight markdown"><code><span class="gu">### Create a Product [POST]</span>
+<span class="p">
+-</span> Request (application/json)<span class="sb">
+
+    - Attributes (Product Create)
+
+</span><span class="p">-</span> Response 201 (application/json)<span class="sb">
+
+    - Attributes (Product Full)
+</span></code></pre>
+
+<p>Then update the data structures:</p>
+
+<pre class="highlight markdown"><code><span class="gh"># Data Structures</span>
+
+<span class="gu">## Product Create (object)</span>
+<span class="p">-</span> name: Old Bristolian (string, required) - Name of the product.
+<span class="p">-</span> description: Tastes like apple juice but knocks you on your arse. (string,
+  required) - Text description of outlininig taste and stuff.
+<span class="p">-</span> type: cider (enum<span class="p">[</span><span class="nv">string</span><span class="p">]</span>, required) - Is it made from apples or pears.
+<span class="p">    -</span> cider
+<span class="p">    -</span> perry
+<span class="p">-</span> apv: 7.4 (number, optional)
+<span class="p">-</span> image_url: <span class="sb">`http://example.com/ciders/old-bris.jpg`</span> (string, optional) - URL
+  of cider photo.
+
+<span class="gu">## Product Full (object)</span>
+<span class="p">-</span> id: djkfh34t234t (string, required) - Unique identifier.
+<span class="p">-</span> Include Product Create
+<span class="p">-</span> relationships (object)
+<span class="p">    -</span> manufacturer
+<span class="p">    -</span> recent_reviews
+</code></pre>
+
+<p>To add a filtering endpoint, we can add another GET. API Blueprint will initially be upset about having two of the same HTTP method on the same URI, but for the filter we'd like to change the URI anyway. We can override the URI simply by providing it after the method.</p>
+
+<pre class="highlight markdown"><code><span class="gu">### Filter Products [GET /products{?type}]</span>
+<span class="p">
+-</span> Parameters<span class="sb">
+
+    - type (enum[string], optional) - Should the response return cider, perry or
+      all.
+        - Default: all
+        - Members
+            - all
+            - cider
+            - perry
+
+</span><span class="p">-</span> Response 200 (application/json)<span class="sb">
+
+    - Attributes (array[Product Full])
+</span></code></pre>
+
+<p>Next up, deleting stuff:</p>
+
+<pre class="highlight markdown"><code><span class="gu">### Delete a Product [DELETE]</span>
+<span class="p">
+-</span> Response 204
+</code></pre>
+
+<p>Nothing particularly interesting to say there. It does what it says on the tin.</p>
+
+<p>For updates, we can start by documenting the happy path.</p>
+
+<pre class="highlight plaintext"><code>
+### Update a Product [PATCH]
+
+- Request (application/json)
+
+    - Attributes (Product Update)
+
+- Response 200 (application/json)
+
+    - Attributes (Product Full)
+        - type: perry
+
+</code></pre>
+
+<p>Here we send a new data structure, much like Product Create:</p>
+
+<pre class="highlight plaintext"><code>## Product Update (object)
+- type: perry
+</code></pre>
+
+<p>When we send this update, we can expect a response to come back, which will be the normal <code>Product Full</code>, but with the type value overridden to be perry now.</p>
+
+<p>If we wanted to show off successful and unsuccessful values, we could do that with having Multiple Transactions. Transactions in API Blueprint are the same as transactions in the world of HTTP in general: the pairing of a request and a response. You can have as many transactions as you like under your Action, by providing an arbitrary string as a name after the <code>Request</code> keyword.</p>
+
+<pre class="highlight markdown"><code><span class="gu">### Update a Product [PATCH]</span>
+<span class="p">
+-</span> Request Successful Update (application/json)<span class="sb">
+
+    - Attributes (Product Update Valid)
+
+</span><span class="p">-</span> Response 200 (application/json)<span class="sb">
+
+    - Attributes (Product Full)
+        - type: perry
+
+</span><span class="p">-</span> Request Unsuccessful Update (application/json)<span class="sb">
+
+    - Attributes (Product Update Invalid)
+
+</span><span class="p">-</span> Response 422 (application/json)<span class="sb">
+
+    - Attributes (Error Unprocessable Entity)
+        - message: `This was an invalid type, please select from cider or
+          perry.`
+        - attribute: type
+</span></code></pre>
+
+<p>Here we have a few new data structures: <code>Product Update Valid</code>, <code>Product Update Invalid</code>, and <code>Error Unprocessable Entity</code>. They're simple enough:</p>
+
+<pre class="highlight markdown"><code><span class="gh"># Data Structures</span>
+
+...
+
+<span class="gu">## Product Update Valid (object)</span>
+<span class="p">-</span> type: perry
+
+<span class="gu">## Product Update Invalid (object)</span>
+<span class="p">-</span> type: wine
+
+<span class="gu">## Error Unprocessable Entity (object)</span>
+<span class="p">-</span> title: Unprocessable Entity
+<span class="p">-</span> message: This resource could not be updated due to invalid arguments being
+  passed.
+</code></pre>
+
+<p>Fin.</p>
+
+          <hr>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/2016/11/16/tips-on-sidekiq-queues/">Tips on Sidekiq Queues</a>
+                </p>
+                <p style="float:right">
+                    Next:
+                    <a class="button" href="/api/2016/12/02/mocking-apis-with-api-blueprint/">Mocking APIs with API Blueprint</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

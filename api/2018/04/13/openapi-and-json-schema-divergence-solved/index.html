@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <!-- (1) Optimize for mobile versions: http://goo.gl/EOpFl -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- (1) force latest IE rendering engine: bit.ly/1c8EiC9 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>OpenAPI and JSON Schema Divergence: Part 2 | Phil Sturgeon</title>
+  <meta name="description" content="Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS." />
+
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="MobileOptimized" content="320" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Open+Sans:400,400i,700,700i">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <link href="/stylesheets/main.css" rel="stylesheet" media="screen" />
+  <link href="/stylesheets/print.css" rel="stylesheet" media="print" />
+  <link href="/images/favicon.jpg" rel="icon" type="image/jpg" />
+
+  <meta property="og:title" content="OpenAPI and JSON Schema Divergence: Part 2" />
+  <meta property="og:type" content="article" />
+  <meta property="article:author" content="Phil Sturgeon" />
+  <meta property="og:description" content="My previous article explained the divergence between OpenAPI and JSON Schema (a.k.a the subset&#x2F;superset&#x2F;sideset problem), and promised solutions. One of those solutions is a tangible thing, which you can install right now! The other is now ready for tool vendors to start considering." />
+  <meta property="og:site_name" content="Phil Sturgeon" />
+  <meta property="og:image" content="https://philsturgeon.uk/images/author.jpg" />
+  <meta property="og:url" content="https://philsturgeon.uk/api/2018/04/13/openapi-and-json-schema-divergence-solved/" />
+  <meta property="og:locale" content="en_GB" />
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@philsturgeon">
+  <meta name="twitter:title" content="OpenAPI and JSON Schema Divergence: Part 2 | Phil Sturgeon">
+  <meta name="twitter:image:src" content="https://philsturgeon.uk/images/author.jpg">
+  <meta name="twitter:url" content="https://philsturgeon.uk/api/2018/04/13/openapi-and-json-schema-divergence-solved/">
+  <meta name="twitter:description" content="My previous article explained the divergence between OpenAPI and JSON Schema (a.k.a the subset&#x2F;superset&#x2F;sideset problem), and promised solutions. One of those solutions is a tangible thing, which you can install right now! The other is now ready for tool vendors to start considering.">
+  <meta name="twitter:creator" content="@philsturgeon">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom Feed" href="/feed.xml" />
+</head>
+
+
+  <body>
+
+    <a class='fa fa-home logo-readium' href='/'></a>
+
+
+    <!-- content start -->
+
+    <main class="content" role="main">
+      <article class="post">
+        <div class="noarticleimage">
+          <div class="post-meta">
+            <h1 class="post-title">OpenAPI and JSON Schema Divergence: Part 2</h1>
+            <div class="cf post-meta-text">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4 class="author-name" itemprop="author" itemscope itemtype="http://schema.org/Person">Phil Sturgeon</h4>
+              on
+              <time datetime="2018-04-13 13:44:00 UTC">
+                Apr 13 2018
+              </time>
+              <a href="/tag/api/">#api</a>
+              <a href="/tag/json-schema/">#json-schema</a>
+              <a href="/tag/api-specs/">#api-specs</a>
+              <a href="/tag/openapi/">#openapi</a>
+            </div>
+          </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <section class="post-content">
+          <div class="post-reading">
+            <span class="post-reading-time"></span> read
+          </div>
+          <a name="topofpage"></a>
+          <hr>
+
+          <p>My <a href="/api/2018/03/30/openapi-and-json-schema-divergence/">previous article</a> explained the divergence between <a href="https://github.com/OAI/OpenAPI-Specification">OpenAPI</a> and <a href="http://json-schema.org/">JSON Schema</a> (a.k.a the subset/superset/sideset problem), and promised solutions. One of those solutions is a tangible thing, which you can install right now! The other is now ready for tool vendors to start considering.</p>
+
+<p>To briefly recap: OpenAPI v3 declares it supports JSON Schema, but there are <a href="https://swagger.io/docs/specification/data-models/keywords/">more caveats than I can ever remember</a> to that.</p>
+
+<p><img alt="Carefully writing JSON Schema for your data model kiiiinda works" src="/images/article_images/2018-03-30-openapi-and-json-schema-divergence/data-model-service-model.png" /></p>
+
+<p>So, if you try to use JSON Schema for your data models, and OpenAPI as the service layer (the glue!) then you bump into errors like this:</p>
+
+<pre class="highlight shell"><code><span class="gp">$ </span>speccy lint docs/openapi.yml
+Specification schema is invalid.
+
+<span class="c">#/paths/~1foo/post/requestBody/content/application~1json/properties/user_uuid</span>
+expected Array <span class="o">[</span> <span class="s1">'string'</span>, <span class="s1">'null'</span> <span class="o">]</span> to be a string
+    expected Array <span class="o">[</span> <span class="s1">'string'</span>, <span class="s1">'null'</span> <span class="o">]</span> to have <span class="nb">type </span>string
+        expected <span class="s1">'object'</span> to be <span class="s1">'string'</span>
+</code></pre>
+
+<p><a href="https://github.com/wework/speccy">Speccy</a> is a linter we built at WeWork to validate and make recommendations, like rubocop or eslint, but for OpenAPI.</p>
+
+<p>Not only will Speccy consider this invalid, no other OpenAPI/Swagger validator will validate this, and most tools run validation before doing their job.</p>
+
+<p>Postman mirroring via <a href="https://apimatic.io/transformer">APIMatic Transformer</a> fails.</p>
+
+<p>SDK generation fails.</p>
+
+<p>Everything fails.</p>
+
+<h2 id="step-1-converting-openapi-to-json-schema">Step 1: Converting OpenAPI to JSON Schema</h2>
+
+<p>Before we worry about how everything is going to fit together, we need the ability to convert from JSON Schema to OpenAPI-specific schema objects (that conform to as many of those caveats as possible).</p>
+
+<p>This was promptly solved with a new NPM package: <a href="https://github.com/wework/json-schema-to-openapi-schema">json-schema-to-openapi-schema</a>! It was quick to release thanks to an existing package: <a href="https://github.com/mikunn/openapi-schema-to-json-schema">openapi-schema-to-json-schema</a>.</p>
+
+<p>Creating json-schema-to-openapi was mostly just a case of flipping the tests around, and changing a bunch of the code to just do the opposite of whatever it was doing before.</p>
+
+<pre class="highlight javascript"><code><span class="kr">const</span> <span class="nx">toOpenApi</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'json-schema-to-openapi-schema'</span><span class="p">);</span>
+
+<span class="kr">const</span> <span class="nx">schema</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s1">'$schema'</span><span class="p">:</span> <span class="s1">'http://json-schema.org/draft-04/schema#'</span><span class="p">,</span>
+  <span class="na">type</span><span class="p">:</span> <span class="p">[</span><span class="s1">'string'</span><span class="p">,</span> <span class="s1">'null'</span><span class="p">],</span>
+  <span class="na">format</span><span class="p">:</span> <span class="s1">'date-time'</span><span class="p">,</span>
+<span class="p">};</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">toOpenApi</span><span class="p">(</span><span class="nx">schema</span><span class="p">));</span>
+</code></pre>
+
+<p>The example prints out:</p>
+
+<pre class="highlight plaintext"><code>{
+  type: 'string',
+  format: 'date-time',
+  nullable: true
+}
+</code></pre>
+
+<p>Here's a full list of the conversions it'll make:</p>
+
+<ul>
+  <li>Strip <code>$schema</code> and <code>id</code> from root, which are both invalid keywords in OpenAPI</li>
+  <li>Switches <code>type: ['foo', 'null']</code> to <code>type: foo</code> and <code>nullable: true</code></li>
+  <li>Switches <code>patternProperties</code> to <code>x-patternProperties</code></li>
+  <li>Converts <code>dependencies</code> to an allOf + oneOf OpenAPI-valid equivalent</li>
+</ul>
+
+<p>Huge props to Henry Andrews (author of the latest JSON Schema drafts) for providing the relevant OpenAPI to convert "dependencies" to. More conversions will need to be made, but I believe 99% of the likely uses are covered.</p>
+
+<p>Henry is also going to be releasing some code to help make this package support multiple drafts of JSON Schema, for now it's only draft 4/5 (they're pretty much the same thing).</p>
+
+<h2 id="step-2-workflow">Step 2: Workflow</h2>
+
+<p>Ok with that done, we need to figure out how and where we convert from JSON Schema to OpenAPI. There are probably a million potential workflows, but here's my recommendation.</p>
+
+<p>Stuff you're doing locally with OpenAPI is usually checking the docs after editing the files, or linting things to see if your changes are ok. Seeing as these are two things Speccy can help with, it seems like a good idea to have Speccy know how to read JSON Schema files.</p>
+
+<p>Default behaviour:</p>
+
+<pre class="highlight plaintext"><code>$ speccy lint docs/openapi.yml
+Specification schema is invalid.
+
+#/paths/~1invalidations/post/requestBody/content/application~1json/properties/user_uuid
+expected Array [ 'string', 'null' ] to be a string
+    expected Array [ 'string', 'null' ] to have type string
+        expected 'object' to be 'string'
+</code></pre>
+
+<p>The new <code>--json-schema</code> switch (<code>-j</code> for short).</p>
+
+<pre class="highlight plaintext"><code>$ speccy lint docs/openapi.yml -j
+Specification is valid, with 0 lint errors
+</code></pre>
+
+<p>The resolver built into Speccy checks for this switch, and treats <code>$ref</code> like it might be a JSON Schema file. It's fairly harmless to make the assumption for aaaall <code>$ref</code> calls, as it's only going to remove/convert specific keywords that are not valid OpenAPI anyway. 👍🏼</p>
+
+<p>This feature will be released in <a href="https://github.com/wework/speccy/milestone/4">Speccy v0.6.0</a> which is still in development, but v0.6.0-3 is available. Run <code>npm i speccy@next</code> to grab the development version and test it out.</p>
+
+<h2 id="this-helps-linting-but">This Helps Linting… but…</h2>
+
+<p>Ok so you don't care about linting, you want to generate SDKs, sync to an automated Postman collection, or one of the other 23497487 things OpenAPI allows you to do, right? Speccy can't do all of that, but it can give you a pure OpenAPI file to play with.</p>
+
+<p>The resolve command has been around for a while, hoisting <code>$ref</code>'ed schemas up into the one file:</p>
+
+<pre class="highlight shell"><code><span class="gp">$ </span>speccy resolve <span class="nb">test</span>/samples/json-schema/openapi.yaml
+</code></pre>
+
+<p>If the <code>$ref</code>'s point to a JSON Schema file, you're gonna get JSON Schema shoved in and it's going to make an invalid file.</p>
+
+<pre class="highlight plaintext"><code>openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: OpenAPI /w JSON Schema Example
+paths:
+  /a:
+    get:
+      summary: foo
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $schema: 'http://json-schema.org/draft-04/schema#'
+                type: object
+                properties:
+                  foo:
+                    readOnly: true
+                    type: string
+                    example: '123'
+                  bar:
+                    type:
+                      - string
+                      - 'null'
+                    format: uuid
+                    example: '12345'
+                  baz:
+                    type:
+                      - string
+                      - 'null'
+                    format: date-time
+                required:
+                  - foo
+                  - bar
+</code></pre>
+
+<p>This file is full of errors.</p>
+
+<p><img alt="Most valid JSON Schema files will trigger errors if they have some of the many keywords OpenAPI doesn't like, especially $schema." src="/images/article_images/2018-04-13-openapi-and-json-schema-divergence-solved/swagger-editor-unhappy.png" /></p>
+
+<p>Using the magical new <code>-j</code> switch, we can resolve ourselves a for realsies OpenAPI file:</p>
+
+<pre class="highlight shell"><code><span class="gp">$ </span>speccy resolve <span class="nb">test</span>/samples/json-schema/openapi.yaml -j
+</code></pre>
+
+<pre class="highlight plaintext"><code>openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: OpenAPI /w JSON Schema Example
+paths:
+  /a:
+    get:
+      summary: foo
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  foo:
+                    readOnly: true
+                    type: string
+                    example: '123'
+                  bar:
+                    type: string
+                    format: uuid
+                    example: '12345'
+                    nullable: true
+                  baz:
+                    type: string
+                    format: date-time
+                    nullable: true
+                required:
+                  - foo
+                  - bar
+</code></pre>
+
+<p>Boom! No more type arrays, we got some nullable's in there so we've not lost any "optional" hints, and it's a perfectly valid OpenAPI file. Thanks Speccy!</p>
+
+<h2 id="a-more-proper-solution">A More Proper Solution</h2>
+
+<p>This is not a perfect solution of course, it's a workaround. I don't want everyone having to use Speccy for the rest of time, but I did need to sort this out for folks at WeWork. We like having JSON Schema files be the source of truth (it makes <a href="https://github.com/thoughtbot/json_matchers">contract testing really easy</a>, and <a href="https://blog.apisyouwonthate.com/the-many-amazing-uses-of-json-schema-client-side-validation-c78a11fbde45">client validation</a> is awesome), but there needs to be a longer term plan.</p>
+
+<p>Luckily, the folks at OpenAPI and JSON Schema are all talking to each other. On the weekly OpenAPI Technical Steering Committee call we hashed out a bit of a plan, and a <a href="https://github.com/OAI/OpenAPI-Specification/issues/1532">sweeeeet proposal has been drafted</a>.</p>
+
+<p>I really like this new proposal:</p>
+
+<pre class="highlight plaintext"><code>openapi: 3.0.2
+info:
+  title: A sample using real JSON Schema and xsd
+  version: 1.0.0
+paths:
+  /:
+    get:
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              x-oas-draft-alternate-schema:
+                type: json-schema
+                externalValue: ./rootschema.json
+            application/xml:
+              x-oas-draft-alternate-schema:
+                type: xml-schema
+                externalValue: ./rootschema.xsd
+</code></pre>
+
+<p>Let's try it out. Let's build it into stuff. I'm gonna have a go at making Speccy support it, I'll be poking folks to get it into projects like <a href="https://rebilly.github.io/ReDoc/">ReDoc</a>.</p>
+
+<p>If no unexpected problems show up with implementing this idea, we'll see this proposal appear as a feature in OpenAPI v3.1, and take over as the official <code>schema</code> keyword in 4.0, killing the "divergence" issue forever.</p>
+
+<p>Thanks to everyone working on this, including (but not limited to): Henry Andrews, Mike Ralphson, Darrell Miller, Daniel Goosby, and anyone else at WeWork I've been nagging for help whilst I fight my way through NodeJS'ing.</p>
+
+          <hr>
+<p>
+  <em>If you appreciate these articles and want me to keep them coming, fire some coins over. Maybe I'll even run the next one through a spell checker.</em>
+</p>
+<p>
+  <em>
+    <strong>bitcoin</strong> - 1PNbuCjgATjaaHtq7zZKqe3FBL7ngyDi23<br/>
+    <strong>etherium</strong> - 0x507d6E943885a5AeD76Fa3C43dB5C73a0f1Dc792
+  </em>
+</p>
+
+        </section>
+        <footer class="post-footer">
+            <section class="share">
+            </section>
+            <section class="post-next-previous">
+                <p>
+                    Previous:
+                    <a class="button" href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a>
+                </p>
+            </section>
+        </footer>
+        <div class="bottom-teaser cf">
+          <div class="more isLeft">
+            <h5 class="index-headline featured"><span>Written by</span></h5>
+            <section class="author">
+              <div class="author-image" style="background-image: url(/images/author.jpg)">Blog Logo</div>
+              <h4>Phil Sturgeon</h4>
+              <p class="bio">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</p>
+            </section>
+          </div>
+          <div class="more isRight">
+            <h5 class="index-headline featured"><span>More Writing</span></h5>
+            <section class="author">
+              <a href="http://apisyouwonthate.com/">
+                <div class="book-image build-apis">Book Cover</div>
+                <h4>Build APIs You Won't Hate</h4>
+              </a>
+              <p class="bio">Everyone and their dog wants an API, so you should probably learn how to build them.</p>
+              <p><a href="http://apisyouwonthate.com/">Buy it from LeanPub or Amazon</a>.</p>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <div id="disqus_thread"></div>
+      <script type="text/javascript">
+          /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+          var disqus_shortname = 'philsturgeon';
+
+
+          /* * * DON'T EDIT BELOW THIS LINE * * */
+          (function() {
+              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+          })();
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </main>
+    <div class="bottom-closer">
+      <div class="background-closer-image" style="background-image: url(/images/cover.jpg)">
+        Image
+      </div>
+      <div class="inner">
+        <h1 class="blog-title">Phil Sturgeon</h1>
+        <h2 class="blog-description">Platform Engineer @ WeWork who talks about APIs a lot. Programming Polyglot, Pragmatist, Centerist and Sarcasist. Ex-The League of Extraordinary Packages, PHP The Right Way, Ex-PHP-FIG, Ex-CodeIgniter, Ex-FuelPHP, Ex-PyroCMS.</h2>
+        <a href="/" class="btn">Back to Overview</a>
+      </div>
+    </div>
+
+    <!-- content end -->
+
+    <footer class='footer' role='contentinfo'>
+  <div class='footer-links'>
+    <ul class='context'>
+      <li>
+        <h3>Content</h3>
+      </li>
+      <li>
+        <a href='/about'>About</a>
+      </li>
+      <li>
+        <a href='/books'>Books</a>
+      </li>
+      <li>
+        <a href='/speaking'>Speaking</a>
+      </li>
+    </ul>
+    <ul class='follow'>
+      <li>
+        <h3>Follow Me</h3>
+      </li>
+      <li>
+        <a href='https://twitter.com/philsturgeon'>Twitter</a>
+      </li>
+      <li>
+        <a href='https://github.com/philsturgeon'>GitHub</a>
+      </li>
+      <li>
+        <a href='http://apibusters.com/'>API Busters Podcast</a>
+      </li>
+      <li>
+        <a href='http://phil.bike/'>Phil.Bike</a>
+      </li>
+    </ul>
+    <ul class='recent_posts'>
+      <li>
+        <h3>Recent Posts</h3>
+        <ul>
+          <li><a href="/api/2018/04/13/openapi-and-json-schema-divergence-solved/">OpenAPI and JSON Schema Divergence: Part 2</a></li>
+          <li><a href="/api/2018/03/30/openapi-and-json-schema-divergence/">OpenAPI and JSON Schema Divergence: Part 1</a></li>
+          <li><a href="/api/2018/03/01/api-specification-workflow-matures/">Design-first API Specification Workflow Matures</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</footer>
+
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="/javascripts/jquery.fitvids.js"></script>
+<script src="/javascripts/index.js"></script>
+<script src="/javascripts/readingTime.min.js"></script>
+<script>
+(function ($) {
+  "use strict";
+  $(document).ready(function(){
+
+    var $window = $(window),
+    $image = $('.post-image-image, .teaserimage-image');
+    $window.on('scroll', function() {
+      var top = $window.scrollTop();
+
+      if (top < 0 || top > 1500) { return; }
+      $image
+        .css('transform', 'translate3d(0px, '+top/3+'px, 0px)')
+        .css('opacity', 1-Math.max(top/700, 0));
+    });
+    $window.trigger('scroll');
+
+    var height = $('.article-image').height();
+    $('.post-content').css('padding-top', height + 'px');
+
+    $('a[href*=#]:not([href=#])').click(function() {
+      if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'')
+       && location.hostname == this.hostname) {
+        var target = $(this.hash);
+        target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+        if (target.length) {
+          $('html,body').animate({ scrollTop: target.offset().top }, 500);
+          return false;
+        }
+      }
+    });
+  });
+}(jQuery));
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-8523256-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+
+  </body>
+
+</html>

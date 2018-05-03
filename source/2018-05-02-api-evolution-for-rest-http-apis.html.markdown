@@ -18,7 +18,7 @@ At some point change cannot be prevented, so at that time evolution suggests you
 
 ## Examples
 
-> The field `name` exists, and that needs to be splint into `first_name` and `last_name`.
+> The field `name` exists, and that needs to be split into `first_name` and `last_name`.
 
 Easy enough. However the data is handled internally (splitting on first space or last space or some other [falsehood defying assumption](https://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/)) you now have two new fields.
 
